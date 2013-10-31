@@ -1,4 +1,7 @@
 function split_dataset(filename_in, filename_out)
+% a function that splits files of MNIST dataset of two digits into training
+% and validation sets
+
 
 load(filename_in);
 
