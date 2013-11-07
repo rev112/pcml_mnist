@@ -2,6 +2,14 @@
 
 import scipy as s
 
+def sig(v):
+    """Compute the sigma function: 1 / (1 + e^(-x))"""
+    return 1.0 / (1 + s.exp(-v))
+
+def g(a1, a2):
+    """Compute the transfer function (g): a1*sig(a2)"""
+    return 1.0 * a1 * sig(a2)
+
 class Layer:
     """Class for one hidden layer"""
 
@@ -13,31 +21,31 @@ class Layer:
         self.b = s.ones(links)
 
     def forward_step(self, x):
-        """Return a_k values for this layer"""
+        """Return z_k = g(a_k, a_k+1) values for this layer (as a vector)"""
+        assert len(x) == d, "Invalid size of input vector (x)"
         w = self.w
         b = self.b
-        return w.dot(x).A[0] + b
+        a_q = w.dot(x).A[0] + b
+        assert len(a_q) == 2 * self.h1, "Invalid size of a_q"
+
+        # Apply transfer function
+        # FIXME Is there a better way?
+        z = map(lambda (x,y): g(x,y), zip(a_q[::2], a_q[1::2]))
+
+        assert len(z) == self.h1, "Invalid size of output vector (z)"
+        return z
 
     def backward_step(x):
         """Return r_k error values for this layer"""
         return
 
     def update(r):
-        """Updates the parameters for this layer, given the errors"""
+        """Update the parameters for this layer, given the errors"""
         return
-
-    def sig(v):
-        """Compute the sigma function: 1 / (1 + e^(-x))"""
-        return 1.0 / (1 + s.exp(-v))
-
-    def g(a1, a2):
-        """Compute the transfer function (g): a1*sig(a2)"""
-        return a1 * sigma(a2)
-
 
 if __name__ == "__main__":
     d = 5
-    neur_n = 1
+    neur_n = 2
     l1 = Layer(neur_n, d)
     print l1.forward_step([1] * d)
 
