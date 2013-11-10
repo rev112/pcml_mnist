@@ -1,7 +1,13 @@
+Multi-Layer Perceptron (MLP)
+===========================
 
-dataset files
+See mlp/ directory.
+
+
+Dataset files
 =============
-All dataset files are in mnist directory.
+
+All dataset files are in mnist/ directory.
 
 original files: mp_X-Y_data.mat
 
