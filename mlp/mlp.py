@@ -28,17 +28,18 @@ class OutputLayer(Layer):
 
     def __init__(self, d):
         self.d = d
-        self.w = s.zeroes(neurons_num)
+        self.w = s.ones(d)
         self.b = 1.0
 
     def forward_step(self, x):
         """Return the value for the last layer (a number, not a vector)"""
         w = self.w
         b = self.b
-        assert len(w) == d, "Invalid size of w"
-        assert len(x) == d, "Invalid size of x"
+        d = self.d
+        assert len(w) == d, "Invalid size of weight vector (w)"
+        assert len(x) == d, "Invalid size of input vector (x)"
         a = w.dot(x) + b
-        assert type(a) == float
+        assert type(a) == s.float64
         return a
 
     def backward_step(x):
@@ -63,9 +64,10 @@ class HiddenLayer(Layer):
 
     def forward_step(self, x):
         """Return z_k = g(a_k, a_k+1) values for this layer (as a vector)"""
-        assert len(x) == d, "Invalid size of input vector (x)"
         w = self.w
         b = self.b
+        d = self.d
+        assert len(x) == d, "Invalid size of input vector (x)"
         a_q = w.dot(x).A[0] + b
         assert len(a_q) == 2 * self.h, "Invalid size of a_q"
 
@@ -89,4 +91,6 @@ if __name__ == "__main__":
     neur_n = 2
     l1 = HiddenLayer(neur_n, d)
     print l1.forward_step([1] * d)
+    l2 = OutputLayer(neur_n)
+    print l2.forward_step([1] * neur_n)
 
