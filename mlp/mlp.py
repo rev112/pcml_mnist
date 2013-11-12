@@ -6,6 +6,7 @@ import functions as func
 class Layer:
     """Common parent for layers"""
     # TODO do we need it?
+    # options: expose abstract methods forward_step, backward_step etc.
 
 
 class OutputLayer(Layer):
@@ -71,6 +72,7 @@ class HiddenLayer(Layer):
         """Update the parameters for this layer, given the errors"""
         return
 
+
 class Mlp:
     def __init__(self, hidden_layers_list, d):
         self.d = d
@@ -79,26 +81,50 @@ class Mlp:
         for neuron_num in hidden_layers_list:
             hidden_layer = HiddenLayer(neuron_num, d)
             layers.append(hidden_layer)
-        
+            d = neuron_num
+
         # Create output layer
         output_layer= OutputLayer(d = hidden_layers_list[-1])
         layers.append(output_layer)
         self.layers = layers
 
+    def get_layers_num(self):
+        return len(self.layers)
+
     def draw(self):
         print 'input dimension:', self.d
         for l in self.layers[:-1]:
-            print 'hidden layer:', l.h
-        print 'output layer:', self.layers[-1].h
+            print 'hidden layer size:', l.h
+        output_neurons = self.layers[-1].h
+        assert output_neurons == 1, "1 neuron in output layer, no?"
+        print 'output layer size:', self.layers[-1].h
+
+    def compute_layers_output(self, x):
+        assert len(x) == self.d, "Invalid size of input vector (x)"
+        output = x
+        for l in self.layers:
+            output = l.forward_step(output)
+        return output
+
+    def classify(self, x):
+        output = compute_layers_output(x)
+        output_class = int(s.sign(output))
+        # TODO do we need to handle this case?
+        assert output_class != 0
+        return output_class
+
 
 if __name__ == "__main__":
     d = 5
     neur_n = 2
     l1 = HiddenLayer(neur_n, d)
-    print l1.forward_step([1] * d)
-    l2 = OutputLayer(neur_n)
-    print l2.forward_step([1] * neur_n)
-    mlp = Mlp(hidden_layers_list = [1,2], d = 5)
-    mlp.draw()
+    print l1.forward_step([1] * d), "\n"
 
+    l2 = OutputLayer(neur_n)
+    print l2.forward_step([1] * neur_n), "\n"
+
+    mlp = Mlp(hidden_layers_list = [1,2], d = 3)
+    print "Number of layers, including output layer:", mlp.get_layers_num()
+    mlp.draw()
+    print mlp.compute_layers_output([2,3,4]), "\n"
 
