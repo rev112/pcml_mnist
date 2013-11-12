@@ -5,6 +5,7 @@ import functions as func
 
 class Layer:
     """Common parent for layers"""
+    # TODO do we need it?
 
 
 class OutputLayer(Layer):
@@ -14,6 +15,8 @@ class OutputLayer(Layer):
         self.d = d
         self.w = s.ones(d)
         self.b = 1.0
+        # For consistency
+        self.h = 1
 
     def forward_step(self, x):
         """Return the value for the last layer (a number, not a vector)"""
@@ -45,7 +48,6 @@ class HiddenLayer(Layer):
         self.w = s.matrix(s.zeros( (links, d) ))
         self.b = s.ones(links)
 
-
     def forward_step(self, x):
         """Return z_k = g(a_k, a_k+1) values for this layer (as a vector)"""
         w = self.w
@@ -58,7 +60,6 @@ class HiddenLayer(Layer):
         # Apply transfer function
         # FIXME Is there a better way?
         z = map(lambda (x,y): func.g(x,y), zip(a_q[::2], a_q[1::2]))
-
         assert len(z) == self.h, "Invalid size of output vector (z)"
         return z
 
@@ -70,6 +71,26 @@ class HiddenLayer(Layer):
         """Update the parameters for this layer, given the errors"""
         return
 
+class Mlp:
+    def __init__(self, hidden_layers_list, d):
+        self.d = d
+        layers = []
+        # Create hidden layers
+        for neuron_num in hidden_layers_list:
+            hidden_layer = HiddenLayer(neuron_num, d)
+            layers.append(hidden_layer)
+        
+        # Create output layer
+        output_layer= OutputLayer(d = hidden_layers_list[-1])
+        layers.append(output_layer)
+        self.layers = layers
+
+    def draw(self):
+        print 'input dimension:', self.d
+        for l in self.layers[:-1]:
+            print 'hidden layer:', l.h
+        print 'output layer:', self.layers[-1].h
+
 if __name__ == "__main__":
     d = 5
     neur_n = 2
@@ -77,4 +98,7 @@ if __name__ == "__main__":
     print l1.forward_step([1] * d)
     l2 = OutputLayer(neur_n)
     print l2.forward_step([1] * neur_n)
+    mlp = Mlp(hidden_layers_list = [1,2], d = 5)
+    mlp.draw()
+
 
