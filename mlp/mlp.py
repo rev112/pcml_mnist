@@ -10,13 +10,18 @@ class Layer:
 
 
 class OutputLayer(Layer):
-    """Class for an output layer"""
+    """Class for an output layer
+
+        d - size of input vector (integer)
+        w - vector of weights (scipy.ndarray of floats)
+        b - bias parameter (float)
+        h - number of neurons, always 1 for output layer
+    """
 
     def __init__(self, d):
         self.d = d
         self.w = s.ones(d)
         self.b = 1.0
-        # For consistency
         self.h = 1
 
     def forward_step(self, x):
@@ -40,7 +45,13 @@ class OutputLayer(Layer):
 
 
 class HiddenLayer(Layer):
-    """Class for one hidden layer"""
+    """Class for one hidden layer
+
+        d - size of input vector (integer)
+        w - matrix of weights (scipy.matrix of floats)
+        b - bias parameter (float)
+        h - number of neurons (integer)
+    """
 
     def __init__(self, neurons_num, d):
         self.h = neurons_num
@@ -74,6 +85,12 @@ class HiddenLayer(Layer):
 
 
 class Mlp:
+    """Class that represents the whole network
+
+        d - size of input vector (integer)
+        layers - list of Layer object, thhe last one is OutputLayer object
+    """
+
     def __init__(self, hidden_layers_list, d):
         self.d = d
         layers = []
@@ -89,9 +106,11 @@ class Mlp:
         self.layers = layers
 
     def get_layers_num(self):
+        """Return the number of layers in the network, including the ouput layer"""
         return len(self.layers)
 
     def draw(self):
+        """Prints the layout of the network"""
         print 'input dimension:', self.d
         for l in self.layers[:-1]:
             print 'hidden layer size:', l.h
@@ -100,6 +119,7 @@ class Mlp:
         print 'output layer size:', self.layers[-1].h
 
     def compute_layers_output(self, x):
+        """Return the output of the whole network (a_Last)"""
         assert len(x) == self.d, "Invalid size of input vector (x)"
         output = x
         for l in self.layers:
@@ -107,10 +127,11 @@ class Mlp:
         return output
 
     def classify(self, x):
+        """Classify the input as +1 or -1"""
         output = compute_layers_output(x)
         output_class = int(s.sign(output))
         # TODO do we need to handle this case?
-        assert output_class != 0
+        assert output_class != 0, "Impossibru!"
         return output_class
 
 
