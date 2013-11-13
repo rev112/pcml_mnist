@@ -129,16 +129,38 @@ class Mlp:
         print 'output layer size:', self.layers[-1].h
 
     def compute_layers_output(self, x):
-        """Return the output of the whole network (a_Last)"""
+        """Return the output of the whole network (a_Last, float)"""
         assert len(x) == self.d, "Invalid size of input vector (x)"
         output = x
         for l in self.layers:
             output = l.forward_step(output)
         return output
 
+    def get_input_error(self, lx, lt):
+        """Return the value of error function for the whole dataset"""
+        assert len(lx) == len(lt), "Data vector and class vector have different dimensions"
+        error = 0
+        # Size of dataset
+        n = len(lx)
+        # FIXME for loop used, they will punish us
+        for i in xrange(n):
+            x = lx[i]
+            t = lt[i]
+            assert len(x) == self.d, "Invalid size of data point (x)"
+
+            # Network output
+            a = self.compute_layers_output(x)
+
+            # Update error, see 4.2 in miniproject description
+            temp = -t*a
+            error += temp + s.log(1 + s.exp(-temp))
+
+        error = error / n
+        return error
+
     def classify(self, x):
         """Classify the input as +1 or -1"""
-        output = compute_layers_output(x)
+        output = self.compute_layers_output(x)
         output_class = int(s.sign(output))
         # TODO do we need to handle this case?
         assert output_class != 0, "Impossibru!"
@@ -158,4 +180,6 @@ if __name__ == "__main__":
     print "Number of layers, including output layer:", mlp.get_layers_num()
     mlp.draw()
     print mlp.compute_layers_output([2,3,4]), "\n"
+    print mlp.get_input_error([[2,3,4], [4,5,6]], [1,-1])
+    print mlp.classify([2,3,4])
 
