@@ -4,9 +4,19 @@ import scipy as s
 import functions as func
 
 class Layer:
-    """Common parent for layers"""
-    # TODO do we need it?
-    # options: expose abstract methods forward_step, backward_step etc.
+    """Common parent for MLP layers"""
+
+    def forward_step(self, x):
+        """Return the output for the layer"""
+        raise NotImplementedError
+
+    def backward_step(self, x):
+        """Return r error value for the layer"""
+        raise NotImplementedError
+
+    def update(self):
+        """Update layer parameters"""
+        raise NotImplementedError
 
 
 class OutputLayer(Layer):
@@ -25,7 +35,7 @@ class OutputLayer(Layer):
         self.h = 1
 
     def forward_step(self, x):
-        """Return the value for the last layer (a number, not a vector)"""
+        """Return the value for the last layer (a float, not a vector)"""
         w = self.w
         b = self.b
         d = self.d
