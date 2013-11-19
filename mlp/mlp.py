@@ -148,6 +148,10 @@ class Mlp:
         # Size of dataset
         n = len(lx)
         # FIXME for loop used, they will punish us
+        # ANSWER: we can't fix this, since compute_layers_output() can't accept
+        # multiple inputs at once. It is not meant to work that way. Anyway, I
+        # think that we don't even need this function.. we're going to use
+        # stochastic gradient descent which always takes only one data per time.
         for i in xrange(n):
             x = lx[i]
             t = lt[i]
@@ -167,7 +171,7 @@ class Mlp:
         """Classify the input as +1 or -1"""
         output = self.compute_layers_output(x)
         output_class = int(s.sign(output))
-        # TODO do we need to handle this case?
+        # TODO do we need to handle this case? Not sure right now
         assert output_class != 0, "Impossibru!"
         return output_class
 
