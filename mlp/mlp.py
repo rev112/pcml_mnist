@@ -81,7 +81,12 @@ class HiddenLayer(Layer):
 
         # Apply transfer function
         # FIXME Is there a better way?
-        z = map(lambda (x,y): func.g(x,y), zip(a_q[::2], a_q[1::2]))
+        #z = map(lambda (x,y): func.g(x,y), zip(a_q[::2], a_q[1::2]))
+
+        # possible fix (not nice)
+        a_q_even = a_q[::2]
+        a_q_odd = a_q[1::2]
+        z = func.g(a_q_even, a_q_odd)
         assert len(z) == self.h, "Invalid size of output vector (z)"
         return z
 
