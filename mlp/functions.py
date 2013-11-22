@@ -4,7 +4,7 @@ import numpy as np
 
 def sig(v):
     """Compute the sigma function: 1 / (1 + e^(-x))
-    @param v - ndarray
+    @param v - ndarray or float
     """
     return 1.0 / (1.0 + np.exp(-v))
 
@@ -13,9 +13,10 @@ def g_scalar(a1, a2):
     return 1.0 * a1 * sig(a2)
 
 def g(a1, a2):
-    """vectorized g funtion, a1 and a2 are ndarrays
+    """Vectorized g function, a1 and a2 are ndarrays
     g = a1 * sig(a2)
     """
+    assert len(a1) == len(a2), "Inconsistent vector lengths"
     return a1 * sig(a2)
 
 def g_der_1(a1, a2):

@@ -45,9 +45,17 @@ class OutputLayer(Layer):
         assert type(a) == s.float64
         return a
 
-    def backward_step(x):
-        """Return r error value for this layer"""
-        return
+    def backward_step(self, x, t):
+        """Return r error value for this output layer (float)
+
+            x - output of the layer (float), equals to a_(k)
+            t - actual class (+1 or -1)
+        """
+        x = s.float64(x)
+        t = int(t)
+        assert t in [-1, 1], "Invalid class"
+        t_new = (1 + t) / 2
+        return func.sig(x) - t_new
 
     def update(r):
         """Update the parameters for this layer (w,b), given the error"""
@@ -91,7 +99,10 @@ class HiddenLayer(Layer):
         return z
 
     def backward_step(x):
-        """Return r_k error values for this layer"""
+        """Return r_k error values for this layer
+
+          x - error vector from the next layer
+        """
         return
 
     def update(r):
@@ -183,7 +194,9 @@ if __name__ == "__main__":
     print l1.forward_step([1] * d), "\n"
 
     l2 = OutputLayer(neur_n)
-    print l2.forward_step([1] * neur_n), "\n"
+    f_step = l2.forward_step([1] * neur_n)
+    error = l2.backward_step(f_step, 1)
+    print f_step, error, "\n"
 
     mlp = Mlp(hidden_layers_list = [1,2], d = 3)
     print "Number of layers, including output layer:", mlp.get_layers_num()
