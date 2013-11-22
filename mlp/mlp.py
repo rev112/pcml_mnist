@@ -78,14 +78,20 @@ class HiddenLayer(Layer):
         self.w = s.matrix(s.zeros( (links, d) ))
         self.b = s.ones(links)
 
-    def forward_step(self, x):
-        """Return z_k = g(a_k, a_k+1) values for this layer (as a vector)"""
+    def layer_output(self, x):
+        """Return the layer output before applying the transfer function"""
         w = self.w
         b = self.b
         d = self.d
         assert len(x) == d, "Invalid size of input vector (x)"
         a_q = w.dot(x).A[0] + b
         assert len(a_q) == 2 * self.h, "Invalid size of a_q"
+        return a_q
+
+    def forward_step(self, x):
+        """Return z_k = g(a_k, a_k+1) values for this layer (as a vector)"""
+
+        a_q = self.layer_output(x)
 
         # Apply transfer function
         # FIXME Is there a better way?
@@ -98,11 +104,40 @@ class HiddenLayer(Layer):
         assert len(z) == self.h, "Invalid size of output vector (z)"
         return z
 
-    def backward_step(x):
+    def backward_step(self, x, w, a):
         """Return r_k error values for this layer
 
           x - error vector from the next layer
+          w - weight vector from the next layer
+          a - output of this layer (before applying the transfer function!)
         """
+        # See 3.3.1 from the course notes
+
+        # 1. Create vector of g'_x and g'_y
+        # (g_der_1, g_der_2)
+        pairs = zip(a[::2], a[1::2])
+        g_vector = map(lambda p: (func.g_der_1(p[0], p[1]),
+                                  func.g_der_2(p[0], p[1])),
+                       pairs)
+        g_vector = s.array(g_vector).flatten()
+        assert len(g_vector) == 2 * self.h, "Invalid size of g_vector"
+
+        # 2. Create a diagonal matrix of g'
+        g_diag = s.diag(g_vector)
+        print g_diag
+
+        # 3. Prepare weight vector (ex: [3,5] -> [3,3,5,5])
+        w = map(lambda x: [x, x], w)
+        w = s.array(w).flatten()
+        assert len(w) == 2 * self.h, "Invalid size of extended weight vector"
+        print w
+
+        # 4. Compute the product
+        r_temp = g_diag.dot(w.transpose())
+        r = r_temp.dot(x)
+        assert len(r) == 2 * self.h, "Invalid size of resulting error vector"
+        print r
+
         return
 
     def update(r):
@@ -190,13 +225,17 @@ class Mlp:
 if __name__ == "__main__":
     d = 5
     neur_n = 2
-    l1 = HiddenLayer(neur_n, d)
-    print l1.forward_step([1] * d), "\n"
 
     l2 = OutputLayer(neur_n)
-    f_step = l2.forward_step([1] * neur_n)
-    error = l2.backward_step(f_step, 1)
-    print f_step, error, "\n"
+    f_step2 = l2.forward_step([1] * neur_n)
+    error = l2.backward_step(f_step2, 1)
+    print f_step2, error, "\n"
+
+    l1 = HiddenLayer(neur_n, d)
+    f_step1 = l1.layer_output([1] * d)
+    errors = l1.backward_step(error, l2.w, f_step1)
+
+
 
     mlp = Mlp(hidden_layers_list = [1,2], d = 3)
     print "Number of layers, including output layer:", mlp.get_layers_num()
