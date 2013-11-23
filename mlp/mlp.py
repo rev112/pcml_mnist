@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 
+import sys
 import scipy as s
 import functions as func
 
@@ -45,20 +46,45 @@ class OutputLayer(Layer):
         assert type(a) == s.float64
         return a
 
-    def backward_step(self, x, t):
+    def backward_step(self, a, t):
         """Return r error value for this output layer (float)
 
-            x - output of the layer (float), equals to a_(k)
+            a - output of the layer (float), equals to a_(k)
             t - actual class (+1 or -1)
         """
-        x = s.float64(x)
+        a = s.float64(a)
         t = int(t)
         assert t in [-1, 1], "Invalid class"
         t_new = (1 + t) / 2
-        return func.sig(x) - t_new
+        return func.sig(a) - t_new
 
-    def update(r):
-        """Update the parameters for this layer (w,b), given the error"""
+
+    def compute_gradient(self, x, r):
+        """Compute gradient for w and b, return as a list"""
+        # Gradient for weight vector
+        dE_dw = r * s.array(x)
+
+        # Gradient for bias
+        dE_db = r
+        return [dE_dw, dE_db]
+
+
+    def update(self, x, r):
+        """Update the parameters for this layer (w,b), given the error
+
+            x - layer input (vector)
+            r - layer error (float, computed in backward_step)
+        """
+
+        [dE_dw, dE_db] = self.compute_gradient(x,r)
+        assert len(dE_dw) == len(x), "Invalid size of weight gradient"
+
+        # TODO momentum term, dynamic learning rate?
+        l_rate = 1
+
+        self.w = self.w - l_rate * dE_dw
+        self.b = self.b - l_rate * dE_db
+
         return
 
 
@@ -223,19 +249,21 @@ class Mlp:
 
 
 if __name__ == "__main__":
-    d = 5
     neur_n = 2
 
     l2 = OutputLayer(neur_n)
-    f_step2 = l2.forward_step([1] * neur_n)
+    linput = [1] * neur_n
+    f_step2 = l2.forward_step(linput)
     error = l2.backward_step(f_step2, 1)
-    print f_step2, error, "\n"
+    print l2.w, l2.b, "\n"
+    l2.update(linput, error)
+    print l2.w, l2.b, "\n"
+    sys.exit(1)
 
+    d = 5
     l1 = HiddenLayer(neur_n, d)
     f_step1 = l1.layer_output([1] * d)
     errors = l1.backward_step(error, l2.w, f_step1)
-
-
 
     mlp = Mlp(hidden_layers_list = [1,2], d = 3)
     print "Number of layers, including output layer:", mlp.get_layers_num()
