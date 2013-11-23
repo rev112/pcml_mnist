@@ -60,13 +60,13 @@ class OutputLayer(Layer):
 
 
     def compute_gradient(self, x, r):
-        """Compute gradient for w and b, return as a list"""
+        """Compute gradient for w and b, return as a tuple"""
         # Gradient for weight vector
         dE_dw = r * s.array(x)
 
         # Gradient for bias
         dE_db = r
-        return [dE_dw, dE_db]
+        return (dE_dw, dE_db)
 
 
     def update(self, x, r):
@@ -76,7 +76,7 @@ class OutputLayer(Layer):
             r - layer error (float, computed in backward_step)
         """
 
-        [dE_dw, dE_db] = self.compute_gradient(x,r)
+        dE_dw, dE_db = self.compute_gradient(x,r)
         assert len(dE_dw) == len(x), "Invalid size of weight gradient"
 
         # TODO momentum term, dynamic learning rate?
@@ -84,7 +84,6 @@ class OutputLayer(Layer):
 
         self.w = self.w - l_rate * dE_dw
         self.b = self.b - l_rate * dE_db
-
         return
 
 
@@ -134,7 +133,7 @@ class HiddenLayer(Layer):
         """Return r_k error values for this layer
 
           x - error vector from the next layer
-          w - weight vector from the next layer
+          w - weight matrix from the next layer (or vector if this hidden layer is the last one)
           a - output of this layer (before applying the transfer function!)
         """
         # See 3.3.1 from the course notes
@@ -150,26 +149,52 @@ class HiddenLayer(Layer):
 
         # 2. Create a diagonal matrix of g'
         g_diag = s.diag(g_vector)
-        print g_diag
 
         # 3. Prepare weight vector (ex: [3,5] -> [3,3,5,5])
         w = map(lambda x: [x, x], w)
         w = s.array(w).flatten()
         assert len(w) == 2 * self.h, "Invalid size of extended weight vector"
-        print w
 
         # 4. Compute the product
         r_temp = g_diag.dot(w.transpose())
         r = r_temp.dot(x)
         assert len(r) == 2 * self.h, "Invalid size of resulting error vector"
-        print r
+        return r
+
+    def compute_gradient(self, x, r):
+        """Compute gradient for w and b, return as a tuple"""
+        # Gradient for weight vector
+        assert len(r) == 2 * self.h, "Invalid size of error vector"
+
+        # TODO check it!!!
+        dE_dw =  (s.matrix(x).transpose() * r).transpose()
+
+        dE_dw_shape = dE_dw.shape
+        assert dE_dw_shape == (2 * self.h, self.d), "Invalid shape of weight matrix"
+
+        # Gradient for bias
+        dE_db = r
+        assert len(dE_db) == 2 * self.h, "Invalid size of error gradient"
+        return (dE_dw, dE_db)
+
+
+
+    def update(self, x, r):
+        """Update the parameters for this layer (w,b), given the error
+
+            x - layer input (vector)
+            r - layer error (float, computed in backward_step)
+        """
+
+        dE_dw, dE_db = self.compute_gradient(x,r)
+
+        # TODO momentum term, dynamic learning rate?
+        l_rate = 1
+
+        self.w = self.w - l_rate * dE_dw
+        self.b = self.b - l_rate * dE_db
 
         return
-
-    def update(r):
-        """Update the parameters for this layer, given the errors"""
-        return
-
 
 class Mlp:
     """Class that represents the whole network
@@ -258,12 +283,16 @@ if __name__ == "__main__":
     print l2.w, l2.b, "\n"
     l2.update(linput, error)
     print l2.w, l2.b, "\n"
-    sys.exit(1)
 
     d = 5
     l1 = HiddenLayer(neur_n, d)
-    f_step1 = l1.layer_output([1] * d)
+    linput = [1] * d
+    f_step1 = l1.layer_output(linput)
     errors = l1.backward_step(error, l2.w, f_step1)
+    print errors
+    l1.update(linput, errors)
+    print l1.w
+    sys.exit(1)
 
     mlp = Mlp(hidden_layers_list = [1,2], d = 3)
     print "Number of layers, including output layer:", mlp.get_layers_num()
