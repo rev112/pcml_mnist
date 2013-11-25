@@ -238,6 +238,14 @@ class Mlp:
             output = l.forward_step(output)
         return output
 
+    def get_point_error(self, x, t):
+        # Update error, see 4.2 in miniproject description
+        assert len(x) == self.d, "Invalid size of data point (x)"
+        a = self.compute_layers_output(x)
+        # Compute log(1 + e^(-t*a)) as (-t*a + log(1 + e^(t*a)))
+        temp = -t*a
+        return temp + s.log1p(s.exp(-temp))
+
     def get_input_error(self, lx, lt):
         """Return the value of error function for the whole dataset"""
         assert len(lx) == len(lt), "Data vector and class vector have different dimensions"
@@ -252,14 +260,7 @@ class Mlp:
         for i in xrange(n):
             x = lx[i]
             t = lt[i]
-            assert len(x) == self.d, "Invalid size of data point (x)"
-
-            # Network output
-            a = self.compute_layers_output(x)
-
-            # Update error, see 4.2 in miniproject description
-            temp = -t*a
-            error += temp + s.log(1 + s.exp(-temp))
+            error += self.get_point_error(x,t)
 
         error = error / n
         return error
@@ -292,7 +293,6 @@ if __name__ == "__main__":
     print errors
     l1.update(linput, errors)
     print l1.w
-    sys.exit(1)
 
     mlp = Mlp(hidden_layers_list = [1,2], d = 3)
     print "Number of layers, including output layer:", mlp.get_layers_num()
