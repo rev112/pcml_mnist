@@ -56,7 +56,7 @@ class OutputLayer(Layer):
         t = int(t)
         assert t in [-1, 1], "Invalid class"
         t_new = (1 + t) / 2
-        return func.sig(a) - t_new
+        return s.array([func.sig(a) - t_new])
 
 
     def compute_gradient(self, x, r):
@@ -119,10 +119,6 @@ class HiddenLayer(Layer):
         a_q = self.layer_output(x)
 
         # Apply transfer function
-        # FIXME Is there a better way?
-        #z = map(lambda (x,y): func.g(x,y), zip(a_q[::2], a_q[1::2]))
-
-        # possible fix (not nice)
         a_q_even = a_q[::2]
         a_q_odd = a_q[1::2]
         z = func.g(a_q_even, a_q_odd)
@@ -138,6 +134,7 @@ class HiddenLayer(Layer):
         """
         # See 3.3.1 from the course notes
 
+        # TODO Check it!!!
         # 1. Create vector of g'_x and g'_y
         # (g_der_1, g_der_2)
         pairs = zip(a[::2], a[1::2])
@@ -154,14 +151,21 @@ class HiddenLayer(Layer):
         w = func.duplicate_columns(w)
         assert w.shape[1] == 2 * self.h, "Invalid size of extended weight vector"
 
-        # 4. Compute the product
+        # 4a. Compute the product
         r_temp = g_diag.dot(w.transpose())
         r = r_temp.dot(x)
+        # 4b. Turn r into a vector
+        r = r.tolist()[0]
+
         assert len(r) == 2 * self.h, "Invalid size of resulting error vector"
         return r
 
     def compute_gradient(self, x, r):
-        """Compute gradient for w and b, return as a tuple"""
+        """Compute gradient for w and b, return as a tuple
+
+            x - layer input (vector)
+            r - layer error (float, computed in backward_step)
+        """
         # Gradient for weight vector
         assert len(r) == 2 * self.h, "Invalid size of error vector"
 
@@ -210,7 +214,7 @@ class Mlp:
             d = neuron_num
 
         # Create output layer
-        output_layer= OutputLayer(d = hidden_layers_list[-1])
+        output_layer = OutputLayer(d = hidden_layers_list[-1])
         layers.append(output_layer)
         self.layers = layers
 
@@ -219,7 +223,7 @@ class Mlp:
         return len(self.layers)
 
     def draw(self):
-        """Prints the layout of the network"""
+        """Print the layout of the network"""
         print 'input dimension:', self.d
         for l in self.layers[:-1]:
             print 'hidden layer size:', l.h
@@ -271,6 +275,7 @@ class Mlp:
         return output_class
 
     def train_network(self, x, t):
+        """Update parameters of the network"""
         assert len(x) == self.d, "Invalid size of input vector (x)"
         pass_info = []
         l_input = s.array(x)
@@ -285,6 +290,7 @@ class Mlp:
             pass_info.append(layer_info)
             l_input = l_output
 
+        # Output layer
         output_layer = self.layers[-1]
         l_output = output_layer.forward_step(l_input)
         layer_info = {'input': l_input, 'output': l_output}
@@ -305,19 +311,18 @@ class Mlp:
         hidden_layers = self.layers[:-1]
         pass_info_hidden = pass_info[:-1]
         assert len(hidden_layers) == len(pass_info_hidden), "Inconsistent number of layers"
-        next_w = out_layer.w 
+        next_w = out_layer.w
         next_err = out_error
         hidden_layer_num = len(hidden_layers)
 
         for i in xrange(hidden_layer_num - 1, -1, -1):
             layer = hidden_layers[i]
             layer_info = pass_info[i]
-            print layer, layer_info
+            print 'layer', i, ':', layer, layer_info
             layer_error = layer.backward_step(next_err, next_w, layer_info['temp'])
             layer.update(layer_info['input'], layer_error)
             next_w = layer.w
             next_err = layer_error
-
 
 if __name__ == "__main__":
     neur_n = 2
@@ -345,5 +350,5 @@ if __name__ == "__main__":
     print mlp.compute_layers_output([2,3,4]), "\n"
     print mlp.get_input_error([[2,3,4], [4,5,6]], [1,-1])
     print mlp.classify([2,3,4])
-    print mlp.train_network([2,3,4], 1)
+    mlp.train_network([2,3,4], 1)
 
