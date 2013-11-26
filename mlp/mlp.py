@@ -6,6 +6,15 @@ import functions as func
 
 class Layer:
     """Common parent for MLP layers"""
+    def __init__(self):
+        self.dw_prev = 0
+        self.db_prev = 0
+        return
+
+    def set_default_parameters(self, params={}):
+        s = [('l_rate', 1.0), ('m_term', 0.0)]
+        for k, v in s:
+            params.setdefault(k, v)
 
     def forward_step(self, x):
         """Return the output for the layer"""
@@ -15,10 +24,32 @@ class Layer:
         """Return r error value for the layer"""
         raise NotImplementedError
 
-    def update(self):
-        """Update layer parameters"""
-        raise NotImplementedError
+    def update(self, x, r, params={}):
+        """Update the parameters for this layer (w,b), given the error
 
+            x - layer input (vector)
+            r - layer error (float, computed in backward_step)
+        """
+
+        self.set_default_parameters(params)
+        dE_dw, dE_db = self.compute_gradient(x,r)
+
+        dE_dw_shape = dE_dw.shape
+        w_shape = self.w.shape
+        assert dE_dw_shape == w_shape, "Inconsistent shapes of weight matrix and the gradient"
+
+        l_rate = params['l_rate']
+        m_term = params['m_term']
+
+        # TODO Duplicated code...
+        dw = -l_rate * (1 - m_term) * dE_dw + m_term * self.dw_prev
+        self.w += dw
+        self.dw_prev = dw
+
+        db = -l_rate * (1 - m_term) * dE_db + m_term * self.db_prev
+        self.b += db
+        self.db_prev = db
+        return
 
 class OutputLayer(Layer):
     """Class for an output layer
@@ -30,6 +61,7 @@ class OutputLayer(Layer):
     """
 
     def __init__(self, d):
+        Layer.__init__(self)
         self.d = d
         self.w = s.matrix(s.ones(d))
         self.b = 1.0
@@ -62,30 +94,11 @@ class OutputLayer(Layer):
     def compute_gradient(self, x, r):
         """Compute gradient for w and b, return as a tuple"""
         # Gradient for weight vector
-        dE_dw = r * s.array(x)
+        dE_dw = s.matrix(r * s.array(x))
 
         # Gradient for bias
         dE_db = r
         return (dE_dw, dE_db)
-
-
-    def update(self, x, r):
-        """Update the parameters for this layer (w,b), given the error
-
-            x - layer input (vector)
-            r - layer error (float, computed in backward_step)
-        """
-
-        dE_dw, dE_db = self.compute_gradient(x,r)
-        assert len(dE_dw) == len(x), "Invalid size of weight gradient"
-
-        # TODO momentum term, dynamic learning rate?
-        l_rate = 1
-
-        self.w = self.w - l_rate * dE_dw
-        self.b = self.b - l_rate * dE_db
-        return
-
 
 class HiddenLayer(Layer):
     """Class for one hidden layer
@@ -97,6 +110,7 @@ class HiddenLayer(Layer):
     """
 
     def __init__(self, neurons_num, d):
+        Layer.__init__(self)
         self.h = neurons_num
         self.d = d
         links = 2 * self.h
@@ -155,7 +169,7 @@ class HiddenLayer(Layer):
         r_temp = g_diag.dot(w.transpose())
         r = r_temp.dot(x)
         # 4b. Turn r into a vector
-        r = r.tolist()[0]
+        r = s.array(r.tolist()[0])
 
         assert len(r) == 2 * self.h, "Invalid size of resulting error vector"
         return r
@@ -164,7 +178,7 @@ class HiddenLayer(Layer):
         """Compute gradient for w and b, return as a tuple
 
             x - layer input (vector)
-            r - layer error (float, computed in backward_step)
+            r - layer error (vector, computed in backward_step)
         """
         # Gradient for weight vector
         assert len(r) == 2 * self.h, "Invalid size of error vector"
@@ -180,32 +194,21 @@ class HiddenLayer(Layer):
         assert len(dE_db) == 2 * self.h, "Invalid size of error gradient"
         return (dE_dw, dE_db)
 
-    def update(self, x, r):
-        """Update the parameters for this layer (w,b), given the error
-
-            x - layer input (vector)
-            r - layer error (float, computed in backward_step)
-        """
-
-        dE_dw, dE_db = self.compute_gradient(x,r)
-
-        # TODO momentum term, dynamic learning rate?
-        l_rate = 1
-
-        self.w = self.w - l_rate * dE_dw
-        self.b = self.b - l_rate * dE_db
-
-        return
-
 class Mlp:
     """Class that represents the whole network
 
         d - size of input vector (integer)
-        layers - list of Layer object, thhe last one is OutputLayer object
+        layers - list of Layer object, the last one is OutputLayer object
+
+    Parameters:
+        params - parameters dictionary
+            mterm - momentum term
+            learning_rate - learning rate for Mlp (dynamic)
     """
 
     def __init__(self, hidden_layers_list, d):
         self.d = d
+        self.set_parameters()
         layers = []
         # Create hidden layers
         for neuron_num in hidden_layers_list:
@@ -217,6 +220,15 @@ class Mlp:
         output_layer = OutputLayer(d = hidden_layers_list[-1])
         layers.append(output_layer)
         self.layers = layers
+
+    def set_parameters(self, mterm = 0, learning_rate = 1):
+        self.params = {}
+
+        assert 0.0 <= mterm and mterm <= 1.0, "Invalid momentum term"
+        self.params['m_term'] = mterm * 1.0
+
+        assert 0.0 <= learning_rate, "Invalid learning rate"
+        self.params['l_rate'] = learning_rate * 1.0
 
     def get_layers_num(self):
         """Return the number of layers in the network, including the ouput layer"""
@@ -305,7 +317,7 @@ class Mlp:
         out_layer_input = pass_info[-1]['input']
         network_output = pass_info[-1]['output']
         out_error = out_layer.backward_step(network_output, t)
-        out_layer.update(out_layer_input, out_error)
+        out_layer.update(out_layer_input, out_error, self.params)
 
         # Update hidden layers
         hidden_layers = self.layers[:-1]
@@ -320,7 +332,7 @@ class Mlp:
             layer_info = pass_info[i]
             print 'layer', i, ':', layer, layer_info
             layer_error = layer.backward_step(next_err, next_w, layer_info['temp'])
-            layer.update(layer_info['input'], layer_error)
+            layer.update(layer_info['input'], layer_error, self.params)
             next_w = layer.w
             next_err = layer_error
 
