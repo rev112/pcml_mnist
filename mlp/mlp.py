@@ -24,20 +24,20 @@ class OutputLayer(Layer):
     """Class for an output layer
 
         d - size of input vector (integer)
-        w - vector of weights (scipy.ndarray of floats)
+        w - vector of weights (actually, a scipy.matrix with one row, all floats)
         b - bias parameter (float)
         h - number of neurons, always 1 for output layer
     """
 
     def __init__(self, d):
         self.d = d
-        self.w = s.ones(d)
+        self.w = s.matrix(s.ones(d))
         self.b = 1.0
         self.h = 1
 
     def forward_step(self, x):
         """Return the value for the last layer (a float, not a vector)"""
-        w = self.w
+        w = func.get_first_row(self.w)
         b = self.b
         d = self.d
         assert len(w) == d, "Invalid size of weight vector (w)"
@@ -133,7 +133,7 @@ class HiddenLayer(Layer):
         """Return r_k error values for this layer
 
           x - error vector from the next layer
-          w - weight matrix from the next layer (or vector if this hidden layer is the last one)
+          w - weight matrix from the next layer
           a - output of this layer (before applying the transfer function!)
         """
         # See 3.3.1 from the course notes
@@ -150,10 +150,9 @@ class HiddenLayer(Layer):
         # 2. Create a diagonal matrix of g'
         g_diag = s.diag(g_vector)
 
-        # 3. Prepare weight vector (ex: [3,5] -> [3,3,5,5])
-        w = map(lambda x: [x, x], w)
-        w = s.array(w).flatten()
-        assert len(w) == 2 * self.h, "Invalid size of extended weight vector"
+        # 3. Prepare weight matrix (ex: [[1,2], [3,4]] -> [[1,1,2,2], [3,3,4,4]])
+        w = func.duplicate_columns(w)
+        assert w.shape[1] == 2 * self.h, "Invalid size of extended weight vector"
 
         # 4. Compute the product
         r_temp = g_diag.dot(w.transpose())
@@ -176,8 +175,6 @@ class HiddenLayer(Layer):
         dE_db = r
         assert len(dE_db) == 2 * self.h, "Invalid size of error gradient"
         return (dE_dw, dE_db)
-
-
 
     def update(self, x, r):
         """Update the parameters for this layer (w,b), given the error
@@ -273,6 +270,54 @@ class Mlp:
         assert output_class != 0, "Impossibru!"
         return output_class
 
+    def train_network(self, x, t):
+        assert len(x) == self.d, "Invalid size of input vector (x)"
+        pass_info = []
+        l_input = s.array(x)
+
+        ### Forward step
+
+        # Hidden layers
+        for l in self.layers[:-1]:
+            l_temp = l.layer_output(l_input)   # Layer output without transfer function
+            l_output = l.forward_step(l_input) #   ...        with transfer function
+            layer_info = {'input': l_input, 'temp': l_temp, 'output': l_output}
+            pass_info.append(layer_info)
+            l_input = l_output
+
+        output_layer = self.layers[-1]
+        l_output = output_layer.forward_step(l_input)
+        layer_info = {'input': l_input, 'output': l_output}
+        pass_info.append(layer_info)
+
+        print "Pass info:", pass_info
+
+        ### Backward step
+
+        # Update output layer
+        out_layer = self.layers[-1]
+        out_layer_input = pass_info[-1]['input']
+        network_output = pass_info[-1]['output']
+        out_error = out_layer.backward_step(network_output, t)
+        out_layer.update(out_layer_input, out_error)
+
+        # Update hidden layers
+        hidden_layers = self.layers[:-1]
+        pass_info_hidden = pass_info[:-1]
+        assert len(hidden_layers) == len(pass_info_hidden), "Inconsistent number of layers"
+        next_w = out_layer.w 
+        next_err = out_error
+        hidden_layer_num = len(hidden_layers)
+
+        for i in xrange(hidden_layer_num - 1, -1, -1):
+            layer = hidden_layers[i]
+            layer_info = pass_info[i]
+            print layer, layer_info
+            layer_error = layer.backward_step(next_err, next_w, layer_info['temp'])
+            layer.update(layer_info['input'], layer_error)
+            next_w = layer.w
+            next_err = layer_error
+
 
 if __name__ == "__main__":
     neur_n = 2
@@ -300,4 +345,5 @@ if __name__ == "__main__":
     print mlp.compute_layers_output([2,3,4]), "\n"
     print mlp.get_input_error([[2,3,4], [4,5,6]], [1,-1])
     print mlp.classify([2,3,4])
+    print mlp.train_network([2,3,4], 1)
 
