@@ -3,16 +3,23 @@
 import sys
 import scipy as s
 import functions as func
+import defaults
 
 class Layer:
     """Common parent for MLP layers"""
+
     def __init__(self):
+        # We need previous delta values for momentum term computation
         self.dw_prev = 0
         self.db_prev = 0
         return
 
     def set_default_parameters(self, params={}):
-        s = [('l_rate', 1.0), ('m_term', 0.0)]
+        """Read default parameters from 'defaults' module"""
+        s = [
+                ('l_rate', defaults.LEARNING_RATE_DEFAULT),
+                ('m_term', defaults.MOMENTUM_TERM_DEFAULT),
+            ]
         for k, v in s:
             params.setdefault(k, v)
 
@@ -41,11 +48,12 @@ class Layer:
         l_rate = params['l_rate']
         m_term = params['m_term']
 
-        # TODO Duplicated code...
+        # Using momentum term. Set m_term to 0 to disable it
         dw = -l_rate * (1 - m_term) * dE_dw + m_term * self.dw_prev
         self.w += dw
         self.dw_prev = dw
 
+        # TODO Duplicated code...
         db = -l_rate * (1 - m_term) * dE_db + m_term * self.db_prev
         self.b += db
         self.db_prev = db
@@ -221,14 +229,20 @@ class Mlp:
         layers.append(output_layer)
         self.layers = layers
 
-    def set_parameters(self, mterm = 0, learning_rate = 1):
+    def set_parameters(self,
+                       m_term = defaults.MOMENTUM_TERM_DEFAULT,
+                       l_rate = defaults.LEARNING_RATE_DEFAULT,
+                       is_rate_dynamic = defaults.IS_DYNAMIC_LEARNING_RATE_DEFAULT):
         self.params = {}
 
-        assert 0.0 <= mterm and mterm <= 1.0, "Invalid momentum term"
-        self.params['m_term'] = mterm * 1.0
+        assert 0.0 <= m_term and m_term <= 1.0, "Invalid momentum term"
+        self.params['m_term'] = m_term * 1.0
 
-        assert 0.0 <= learning_rate, "Invalid learning rate"
-        self.params['l_rate'] = learning_rate * 1.0
+        assert 0.0 <= l_rate, "Invalid learning rate"
+        self.params['l_rate'] = l_rate * 1.0
+
+        assert is_rate_dynamic in [True, False], "Waaaaat?"
+        self.params['is_rate_dynamic'] = is_rate_dynamic
 
     def get_layers_num(self):
         """Return the number of layers in the network, including the ouput layer"""
@@ -287,7 +301,7 @@ class Mlp:
         return output_class
 
     def train_network(self, x, t):
-        """Update parameters of the network"""
+        """Update parameters of the network for one point"""
         assert len(x) == self.d, "Invalid size of input vector (x)"
         pass_info = []
         l_input = s.array(x)
@@ -317,23 +331,24 @@ class Mlp:
         out_layer_input = pass_info[-1]['input']
         network_output = pass_info[-1]['output']
         out_error = out_layer.backward_step(network_output, t)
+        next_err = out_error
+        next_w = out_layer.w
         out_layer.update(out_layer_input, out_error, self.params)
 
         # Update hidden layers
         hidden_layers = self.layers[:-1]
         pass_info_hidden = pass_info[:-1]
         assert len(hidden_layers) == len(pass_info_hidden), "Inconsistent number of layers"
-        next_w = out_layer.w
-        next_err = out_error
         hidden_layer_num = len(hidden_layers)
 
         for i in xrange(hidden_layer_num - 1, -1, -1):
             layer = hidden_layers[i]
             layer_info = pass_info[i]
             print 'layer', i, ':', layer, layer_info
+            layer_weights = layer.w
             layer_error = layer.backward_step(next_err, next_w, layer_info['temp'])
             layer.update(layer_info['input'], layer_error, self.params)
-            next_w = layer.w
+            next_w = layer_weights
             next_err = layer_error
 
 if __name__ == "__main__":
