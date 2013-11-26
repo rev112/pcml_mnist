@@ -27,3 +27,19 @@ def g_der_2(a1, a2):
     """Compute the partial derivative of g wrt second argument"""
     return a1 * (1.0 - sig(a2)) * sig(a2)
 
+
+# Helpers for matrices and arrays
+
+def get_first_row(matrix):
+    return np.asarray(matrix)[0]
+
+def duplicate_columns(m):
+    # Example: [[1,2], [3,4]] -> [[1,1,2,2], [3,3,4,4]]
+
+    # TODO really dirty way, rewrite it
+    m = np.matrix(m).tolist()
+    extend_row = lambda row: np.array(map(lambda x: [x,x], row)).flatten()
+    result_matrix = np.matrix(map(extend_row, m))
+    return result_matrix
+
+
