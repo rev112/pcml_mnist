@@ -4,7 +4,7 @@ import sys
 import scipy as s
 import functions as func
 import defaults
-import pdb
+import debug as dbg
 
 class Layer:
     """Common parent for MLP layers"""
@@ -112,7 +112,7 @@ class OutputLayer(Layer):
 
         # Gradient for bias
         dE_db = r[0]
-        print 'output gradients', dE_db, dE_dw
+        dbg.prt('output gradients', dE_db, dE_dw)
         return (dE_dw, dE_db)
 
 class HiddenLayer(Layer):
@@ -330,7 +330,7 @@ class Mlp:
         pass_info.append(layer_info)
 
         # pdb.set_trace()
-        print "Pass info:", pass_info
+        dbg.prt("Pass info:", pass_info)
 
         ### Backward step
 
@@ -352,7 +352,7 @@ class Mlp:
         for i in xrange(hidden_layer_num - 1, -1, -1):
             layer = hidden_layers[i]
             layer_info = pass_info[i]
-            print 'layer', i, ':', layer, layer_info
+            dbg.prt('layer', i, ':', layer, layer_info)
             layer_weights = layer.w
             layer_error = layer.backward_step(next_err, next_w, layer_info['temp'])
             layer.update(layer_info['input'], layer_error, self.params)
