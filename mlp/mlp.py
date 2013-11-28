@@ -4,6 +4,7 @@ import sys
 import scipy as s
 import functions as func
 import defaults
+import pdb
 
 class Layer:
     """Common parent for MLP layers"""
@@ -35,7 +36,7 @@ class Layer:
         """Update the parameters for this layer (w,b), given the error
 
             x - layer input (vector)
-            r - layer error (float, computed in backward_step)
+            r - layer error (vector of floats, computed in backward_step)
         """
 
         self.set_default_parameters(params)
@@ -100,12 +101,18 @@ class OutputLayer(Layer):
 
 
     def compute_gradient(self, x, r):
-        """Compute gradient for w and b, return as a tuple"""
-        # Gradient for weight vector
+        """Compute gradient for w and b, return as a tuple
+
+            x - layer input (vector)
+            r - layer error (vector of one float, computed in backward_step)
+        """
+
+       # Gradient for weight vector
         dE_dw = s.matrix(r * s.array(x))
 
         # Gradient for bias
-        dE_db = r
+        dE_db = r[0]
+        print 'output gradients', dE_db, dE_dw
         return (dE_dw, dE_db)
 
 class HiddenLayer(Layer):
@@ -113,7 +120,7 @@ class HiddenLayer(Layer):
 
         d - size of input vector (integer)
         w - matrix of weights (scipy.matrix of floats)
-        b - bias parameter (float)
+        b - bias parameter vector (floats)
         h - number of neurons (integer)
     """
 
@@ -322,6 +329,7 @@ class Mlp:
         layer_info = {'input': l_input, 'output': l_output}
         pass_info.append(layer_info)
 
+        # pdb.set_trace()
         print "Pass info:", pass_info
 
         ### Backward step
@@ -371,11 +379,11 @@ if __name__ == "__main__":
     l1.update(linput, errors)
     print l1.w
 
-    mlp = Mlp(hidden_layers_list = [1,2], d = 3)
+    mlp = Mlp(hidden_layers_list = [4,2], d = 2)
     print "Number of layers, including output layer:", mlp.get_layers_num()
     mlp.draw()
-    print mlp.compute_layers_output([2,3,4]), "\n"
-    print mlp.get_input_error([[2,3,4], [4,5,6]], [1,-1])
-    print mlp.classify([2,3,4])
-    mlp.train_network([2,3,4], 1)
+    for i in xrange(40):
+        print "\nRun", i
+        mlp.train_network([1,1], 1)
+        mlp.train_network([-1,-1], -1)
 
