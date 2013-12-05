@@ -1,6 +1,7 @@
 #!/usr/bin/env python2
 
 import scipy as s
+import helpers as h
 
 class SVM:
     """SVM class
@@ -24,25 +25,78 @@ class SVM:
         self.tau = 1e-08
         self.C = 1
 
+        self.eps = 1e-08
         self.compute_kernel_matrix()
         return
 
+    ### Move to separate module?
+    def is_in_I_0(self, i):
+        assert i in range(self.n), "Invalid index i"
+        return (0 < self.alpha[i]) and (self.alpha[i] < self.C)
+
+    def is_in_I_plus(self, i):
+        assert i in range(self.n), "Invalid index i"
+        return (self.T[i] == 1 and h.in_range(self.alpha[i], -self.eps, 0)) or \
+               (self.T[i] == -1 and h.in_range(self.alpha[i], self.C, self.C + self.eps))
+
+    def is_in_I_minus(self, i):
+        assert i in range(self.n), "Invalid index i"
+        return (self.T[i] == -1 and h.in_range(self.alpha[i], -self.eps, 0)) or \
+               (self.T[i] == 1 and h.in_range(self.alpha[i], self.C, self.C + self.eps))
+
+    def filter_alpha(self, f):
+        return filter(f, range(self.n))
+
+    ###
+
+    def recompute_I_sets(self):
+        # Initialize I_low and I_up
+        # TODO how to find indices in a cool way?
+        I_0 = self.filter_alpha(self.is_in_I_0)
+        I_plus = self.filter_alpha(self.is_in_I_plus)
+        I_minus = self.filter_alpha(self.is_in_I_minus)
+        assert len(I_0) + len(I_plus) + len(I_minus) == self.n, "Invalid I_* sets"
+        assert set(I_0 + I_plus + I_minus) == set(range(self.n))
+
+        self.I_low = I_plus + I_0
+        self.I_up = I_minus + I_0
+
     def initialize_run(self):
         self.f = -self.T
-        self.alpha = s.ones(self.n)
-
-        # Initialize I_low and I_up
-
-        # TODO how to find indices in a cool way?
-        I_0 = set()
-        I_plus = set()
-        I_minus = set()
-        self.I_low = I_plus.union(I_0)
-        self.I_up = I_minus.union(I_0)
+        self.alpha = s.zeros(self.n)
+        self.recompute_I_sets()
         return
 
     def run(self):
         self.initialize_run()
+        T = self.T
+        K = self.K
+        step_n = 1
+        while(1):
+            (i, j) = self.select_pair()
+            if j == -1:
+                break
+            sig = T[i] * T[j]
+
+            # 1. Computer L, H
+
+            eta = K[i][i] + K[j][j] - 2*K[i][j]
+            if eta > 1e-15:
+                # 2. Compute the minimum along the direction of the constraint
+                print 'lala'
+            else:
+                print 'lolo'
+                # 3. Compute F_H, F_L
+
+            # 4. Compute new alpha_i
+
+            # 5. Update alpha vector
+
+            # 6. Update f
+
+            # 7. Update I_low, I_up
+
+            step_n += 1
         return
 
     def compute_kernel_matrix(self):
@@ -67,12 +121,14 @@ class SVM:
         K = f(A)
         assert K.shape == (n,n), "Invalid shape of kernel matrix"
         print 'K', K
+        self.K = K
         return
 
     def select_pair(self):
         """Choose violated pair (see 1.2 from SVM doc)"""
-        i_low = True
-        i_up = False
+        i_low = -1
+        i_up = -1
+        assert i_low < 0 or i_low != i_up, "Indices are equal!"
         return [i_low, i_up]
 
 
