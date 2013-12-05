@@ -22,8 +22,9 @@ class SVM:
         self.X = X
         self.T = T
 
-        self.tau = 1e-08
-        self.C = 1
+        # Tau for Gaussian kernel (Warning: there are two different taus in documents!)
+        self.tau = 0.01
+        self.C = 0.01
 
         self.eps = 1e-08
         self.compute_kernel_matrix()
@@ -58,8 +59,8 @@ class SVM:
         assert len(I_0) + len(I_plus) + len(I_minus) == self.n, "Invalid I_* sets"
         assert set(I_0 + I_plus + I_minus) == set(range(self.n))
 
-        self.I_low = I_plus + I_0
-        self.I_up = I_minus + I_0
+        self.I_low = I_minus + I_0
+        self.I_up = I_plus + I_0
 
     def initialize_run(self):
         self.f = -self.T
@@ -80,7 +81,7 @@ class SVM:
 
             # 1. Computer L, H
 
-            eta = K[i][i] + K[j][j] - 2*K[i][j]
+            eta = K[(i,i)] + K[(j,j)] - 2*K[(i,j)]
             if eta > 1e-15:
                 # 2. Compute the minimum along the direction of the constraint
                 print 'lala'
@@ -96,6 +97,7 @@ class SVM:
 
             # 7. Update I_low, I_up
 
+            break
             step_n += 1
         return
 
@@ -126,15 +128,23 @@ class SVM:
 
     def select_pair(self):
         """Choose violated pair (see 1.2 from SVM doc)"""
-        i_low = -1
-        i_up = -1
-        assert i_low < 0 or i_low != i_up, "Indices are equal!"
-        return [i_low, i_up]
+        f = self.f
+        I_up, I_low = self.I_up, self.I_low
+
+        i_up = I_up[f[I_up].argmin()]
+        i_low = I_low[f[I_low].argmax()]
+        assert i_low != i_up, "Indices are equal!"
+
+        # Check for optimality
+        if f[i_low] <= f[i_up] + 2*self.tau:
+            i_low = -1
+            i_up = -1
+        return (i_low, i_up)
 
 
 if __name__ == "__main__":
     X = s.matrix([  [1,2],
-                    [2,3],
+                    [2,5],
                     [3,4] ])
     T = s.array([1, -1, 1])
     svm = SVM(3,2,X,T)
