@@ -43,3 +43,27 @@ def duplicate_columns(m):
     return result_matrix
 
 
+def get_random_direction(d):
+    """Computes random direction vector of length d"""
+    success = False
+    while not success:
+        direction = np.random.uniform(-1, 1, d)
+        r_squared = np.sum(direction**2)
+        if 0 < r_squared and r_squared <= 1.0:
+            success = True
+            
+    # return normalized
+    return direction / np.sqrt(r_squared)
+
+def computeGradientApproximation(mlp, lx, lt, eps = 1e-4):
+    """Computes an approximation (symmetric finite difference) of error gradient
+    """
+    d = get_random_direction(mlp.get_dimension())
+    
+    # TODO: get huge w vector
+
+    # TODO: create MLPs with modified weights
+
+    # TODO: get errors E(w + eps*d) and E(w - eps*d)
+
+    return (Eplus - Eminus) / 2 / eps
