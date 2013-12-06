@@ -84,11 +84,15 @@ class SVM:
 
             eta = K[(i,i)] + K[(j,j)] - 2*K[(i,j)]
             if eta > 1e-15:
-                # 2. Compute the minimum along the direction of the constraint
-                print 'lala'
+                # 2. Compute the minimum along the direction of the constraint, clip
+                alpha_j = self.compute_min_and_clip(i, j, L, H, eta)
             else:
                 # 3. Compute F_H, F_L
-                print 'lolo'
+                F_L, F_H = self.compute_F_LH(i, j, L, H)
+                if F_L > F_H:
+                    alpha_j = H
+                else:
+                    alpha_j = L
 
             # 4. Compute new alpha_i
 
@@ -101,6 +105,38 @@ class SVM:
             break
             step_n += 1
         return
+
+    def compute_F_LH(self, i, j, L, H):
+        K = self.K
+        T = self.T
+        f = self.f
+        alpha = self.alpha
+        sig = T[i] * T[j]
+        w = alpha[i] + sig * alpha[j]
+        v_i = f[i] + T[i] - alpha[i]*T[i]*K[(i,i)] - alpha[j]*T[j]*K[(i,j)]
+        v_j = f[j] + T[j] - alpha[i]*T[i]*K[(i,j)] - alpha[j]*T[j]*K[(j,j)]
+
+        L_i = w - sig * L
+        F_L = 0.5 * (K[(i,i)] * L_i * L_i + K[(j,j)] * L * L)
+        F_L += sig * K[(i,j)] * L_i * L
+        F_L += T[i] * L_i * v_i + T[j] * L * v_j - L_i - L
+
+        H_i = w - sig * H
+        F_H = 0.5 * (K[(i,i)] * H_i * H_i + K[(j,j)] * H * H)
+        F_H += sig * K[(i,j)] * H_i * H
+        F_H += T[i] * H_i * v_i + T[j] * H * v_j - H_i - H
+
+        return [F_L, F_H]
+
+    def compute_min_and_clip(self, i, j, L, H, eta):
+        f = self.f
+        alpha_j_unc = self.alpha[j] + 1.0 * self.T[j] * (f[i] - f[j]) / eta
+        alpha_j = alpha_j_unc
+        if alpha_j < L:
+            alpha_j = L
+        elif alpha_j_unc > H:
+            alpha_j = H
+        return alpha_j
 
     def compute_L_H(self, i, j):
         """Compute L and H"""
