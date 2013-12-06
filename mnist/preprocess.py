@@ -48,7 +48,7 @@ def preprocess():
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        sys.stderr.write('Usage: preprocess.py MATFILE')
+        sys.stderr.write('Usage: preprocess.py MATFILE\n')
         sys.exit(1)
     preprocess()
 
