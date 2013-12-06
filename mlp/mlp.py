@@ -5,6 +5,7 @@ import scipy as s
 import functions as func
 import defaults
 import debug as dbg
+import pickle
 
 class Layer:
     """Common parent for MLP layers
@@ -396,5 +397,6 @@ if __name__ == "__main__":
         mlp.train_network([1,1], 1)
         mlp.train_network([-1,-1], -1)
 
+    pickle.dump(mlp, open('trained_network.dat', 'wb'))
 
 
