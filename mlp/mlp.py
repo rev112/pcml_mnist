@@ -72,12 +72,39 @@ class Layer:
         self.db_prev = db
         return
 
+    def get_weights_len(self):
+        """Returns the length of all weights for this layer"""
+        (wrows, wcols) = self.w.shape
+        lenb = len(self.b)
+        return wrows*wcols + lenb
+
+    def serialize_weights(self):
+        """Returns ndarray of all weights for this layer"""
+        # this returns 'flat' vector, row after row
+        w = self.w.reshape(-1)
+        return s.concatenate((w, self.b))
+
+    def deserialize_weights(self, w):
+        """Takes array w, reshapes it and stores it as internal weights and
+        bias parameters
+        Note: this is not a serialization of the whole class, this
+        reconstruction uses dimensions already stored in object
+        """
+        assert(len(w) == self.get_weights_len())
+
+        (wrows, wcols) = self.w.shape
+        wtotal = wrows * wcols
+
+        self.w = w[:wtotal].reshape(wrows, wcols)
+        self.b = w[wtotal:]
+        
+
 class OutputLayer(Layer):
     """Class for an output layer
 
         d - size of input vector (integer)
         w - vector of weights (actually, a scipy.matrix with one row, all floats)
-        b - bias parameter (float)
+        b - bias parameter (1 float in array)
         h - number of neurons, always 1 for output layer
     """
 
@@ -85,7 +112,7 @@ class OutputLayer(Layer):
         Layer.__init__(self, 1, d)
 
         self.w = s.matrix(s.ones(d))
-        self.b = 1.0
+        self.b = s.array([1.0])
 
     def forward_step(self, x):
         """Return the value for the last layer (a float, not a vector)"""
@@ -264,6 +291,35 @@ class Mlp:
     def get_layers_num(self):
         """Return the number of layers in the network, including the ouput layer"""
         return len(self.layers)
+
+    def get_weights_dimension(self):
+        """Returns the number of all the weights and biases"""
+        layer_dims = [layer.get_weights_len() for layer in self.layers]
+        return s.sum(layer_dims)
+
+    def serialize_weights(self):
+        """Returns ndarray of all weights"""
+        layers_weights = [layer.serialize_weights() for layer in self.layers]
+        return s.concatenate(layers_weights)
+
+    def deserialize_weights(self, w):
+        """Takes array w, reshapes it and stores it as internal weights and
+        bias parameters
+        Note: this is not a serialization of the whole class, this
+        reconstruction uses dimensions already stored in object
+        """
+        layer_dims = [layer.get_weights_len() for layer in self.layers]
+        # cumulative sum, to index w
+        post_dims = s.cumsum(layer_dims)
+        # lower bound to index w, for easier iteration
+        pre_dims = s.concatenate((s.array([0]), layer_dims[:-1]))
+
+        layers_weights = [w[a:b] for a, b in zip(pre_dims, layer_dims)]
+        assert(len(layers_weights) == len(self.layers))
+
+        for layer, w_l in zip(self.layers, layer_weights):
+            layer.deserialize_weights(w_l)
+
 
     def draw(self):
         """Print the layout of the network"""
