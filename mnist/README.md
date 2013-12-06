@@ -15,6 +15,10 @@ resolution images
 `split_dataset.m` - splits train set into train and validation. Takes any basic 
 dataset and outputs the split dataset.
 
+`create_xor.m` - creates xor dataset (needs preprocessing)
+
+`create_mini_xor.m` - creates mini xor dataset
+
 `mp_X-Y_data.mat` - a basic dataset that is not preprocessed
 
 `mp_X-Y_data_prepr.mat` - a basic preprocessed dataset 
@@ -26,3 +30,5 @@ dataset and outputs the split dataset.
 `xor_data.mat` - a basic dataset for xor problem (empty Xtest/Ytest)
 
 `xor_prepr_data.mat` - a basic preprocessed dataset for xor problem (empty Xtest/Ytest)
+
+`mini_xor_data.mat` - a basic dataset for xor problem (preprocessed) with only 4 datapoints
