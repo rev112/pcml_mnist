@@ -80,14 +80,15 @@ class SVM:
             sig = T[i] * T[j]
 
             # 1. Computer L, H
+            L, H = self.compute_L_H(i, j)
 
             eta = K[(i,i)] + K[(j,j)] - 2*K[(i,j)]
             if eta > 1e-15:
                 # 2. Compute the minimum along the direction of the constraint
                 print 'lala'
             else:
-                print 'lolo'
                 # 3. Compute F_H, F_L
+                print 'lolo'
 
             # 4. Compute new alpha_i
 
@@ -100,6 +101,17 @@ class SVM:
             break
             step_n += 1
         return
+
+    def compute_L_H(self, i, j):
+        """Compute L and H"""
+        T = self.T
+        C = self.C
+        sig = T[i] * T[j]
+        sig_w = self.alpha[j] + sig * self.alpha[i]
+
+        L = max(0,      sig_w - C * h.indicator(sig == 1))
+        H = min(self.C, sig_w + C * h.indicator(sig == -1))
+        return [L, H]
 
     def compute_kernel_matrix(self):
         """Compute kernel matrix (see 2.1 from SVM doc)"""
