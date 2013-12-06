@@ -3,8 +3,8 @@ MNIST DATASET
 
 This folder contains MNIST dataset files and several processing scripts.
 
-Here, a basic dataset is one with entries such as Xtrain, Ytrain, Xtest, Ytest.
-A split dataset has entries such as TrainClass, TrainSet, ValidClass, ValidSet,
+Here, a *basic dataset* is one with entries such as Xtrain, Ytrain, Xtest, Ytest.
+A *split dataset* has entries such as TrainClass, TrainSet, ValidClass, ValidSet,
 TestClass, TestSet.
 
 `preprocess.py` - performs normalization of the basic dataset
