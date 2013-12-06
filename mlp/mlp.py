@@ -7,12 +7,23 @@ import defaults
 import debug as dbg
 
 class Layer:
-    """Common parent for MLP layers"""
+    """Common parent for MLP layers
+    
+        d - size of input vector (integer)
+        w - matrix of weights (scipy.matrix of floats)
+        b - bias parameter vector (floats)
+        h - number of neurons (integer)
+    """
 
-    def __init__(self):
+    def __init__(self, neurons_num, d):
         # We need previous delta values for momentum term computation
         self.dw_prev = 0
         self.db_prev = 0
+
+        self.h = neurons_num
+        self.d = d
+        self.w = None # define it in subclass
+        self.b = None # define it in subclass
         return
 
     def set_default_parameters(self, params={}):
@@ -70,11 +81,10 @@ class OutputLayer(Layer):
     """
 
     def __init__(self, d):
-        Layer.__init__(self)
-        self.d = d
+        Layer.__init__(self, 1, d)
+
         self.w = s.matrix(s.ones(d))
         self.b = 1.0
-        self.h = 1
 
     def forward_step(self, x):
         """Return the value for the last layer (a float, not a vector)"""
@@ -125,9 +135,8 @@ class HiddenLayer(Layer):
     """
 
     def __init__(self, neurons_num, d):
-        Layer.__init__(self)
-        self.h = neurons_num
-        self.d = d
+        Layer.__init__(self, neurons_num, d)
+
         links = 2 * self.h
         self.w = s.matrix(s.zeros( (links, d) ))
         self.b = s.ones(links)
@@ -386,4 +395,6 @@ if __name__ == "__main__":
         print "\nRun", i
         mlp.train_network([1,1], 1)
         mlp.train_network([-1,-1], -1)
+
+
 
