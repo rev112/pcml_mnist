@@ -22,3 +22,7 @@ dataset and outputs the split dataset.
 `mp_X-Y_data_split.mat` - a prerocessed split dataset
 
 `mp_X-Y_lowres_data.mat` - a low resolution basic dataset, not preprocessed
+
+`xor_data.mat` - a basic dataset for xor problem (empty Xtest/Ytest)
+
+`xor_prepr_data.mat` - a basic preprocessed dataset for xor problem (empty Xtest/Ytest)
