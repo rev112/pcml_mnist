@@ -85,24 +85,31 @@ class SVM:
             eta = K[(i,i)] + K[(j,j)] - 2*K[(i,j)]
             if eta > 1e-15:
                 # 2. Compute the minimum along the direction of the constraint, clip
-                alpha_j = self.compute_min_and_clip(i, j, L, H, eta)
+                alpha_j_new = self.compute_min_and_clip(i, j, L, H, eta)
             else:
                 # 3. Compute F_H, F_L
                 F_L, F_H = self.compute_F_LH(i, j, L, H)
                 if F_L > F_H:
-                    alpha_j = H
+                    alpha_j_new = H
                 else:
-                    alpha_j = L
+                    alpha_j_new = L
 
             # 4. Compute new alpha_i
+            alpha_i = self.alpha[i]
+            alpha_j = self.alpha[j]
+            alpha_i_new = alpha_i + sig * (alpha_j - alpha_j_new)
 
             # 5. Update alpha vector
+            self.alpha[i] = alpha_i_new
+            self.alpha[j] = alpha_j_new
 
             # 6. Update f
+            self.f += T[i] * (alpha_i_new - alpha_i) * s.array(K[i])[0]
+            self.f += T[j] * (alpha_j_new - alpha_j) * s.array(K[j])[0]
 
             # 7. Update I_low, I_up
+            self.recompute_I_sets()
 
-            break
             step_n += 1
         return
 
@@ -188,7 +195,6 @@ class SVM:
             i_low = -1
             i_up = -1
         return (i_low, i_up)
-
 
 if __name__ == "__main__":
     X = s.matrix([  [1,2],
