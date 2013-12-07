@@ -67,3 +67,21 @@ def computeGradientApproximation(mlp, lx, lt, eps = 1e-4):
     # TODO: get errors E(w + eps*d) and E(w - eps*d)
 
     return (Eplus - Eminus) / 2 / eps
+
+
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.pyplot as plt
+
+def testplot_random_directions():
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    d = 3
+    for k in xrange(1000):
+        dir = get_random_direction(d)
+        ax.scatter(dir[0], dir[1], dir[2])
+    plt.show()
+
+if __name__ == "__main__":
+    testplot_random_directions()
+
