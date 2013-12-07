@@ -23,12 +23,18 @@ class SVM:
         self.T = T
 
         # Tau for Gaussian kernel (Warning: there are two different taus in documents!)
-        self.tau = 0.01
-        self.C = 0.01
+        self.set_params()
+        assert self.C > 0, "Invalid C"
 
         self.eps = 1e-08
         self.compute_kernel_matrix()
+
+        self.b = 0
         return
+
+    def set_params(self, C=0.01, tau=0.01):
+        self.C = C
+        self.tau = tau
 
     ### Move to separate module?
     def is_in_I_0(self, i):
@@ -56,14 +62,16 @@ class SVM:
         I_0 = self.filter_alpha(self.is_in_I_0)
         I_plus = self.filter_alpha(self.is_in_I_plus)
         I_minus = self.filter_alpha(self.is_in_I_minus)
+        print I_0, I_plus, I_minus
         assert len(I_0) + len(I_plus) + len(I_minus) == self.n, "Invalid I_* sets"
         assert set(I_0 + I_plus + I_minus) == set(range(self.n))
 
         self.I_low = I_minus + I_0
         self.I_up = I_plus + I_0
+        self.I_0 = I_0
 
     def initialize_run(self):
-        self.f = -self.T
+        self.f = -self.T * 1.0
         self.alpha = s.zeros(self.n)
         self.recompute_I_sets()
         return
@@ -72,8 +80,10 @@ class SVM:
         self.initialize_run()
         T = self.T
         K = self.K
-        step_n = 1
+        step_n = 0
         while(1):
+            print "Step %u, F: %f" % (step_n, self.compute_F())
+            print "Alphas:", self.alpha, "\n"
             (i, j) = self.select_pair()
             if j == -1:
                 break
@@ -111,7 +121,33 @@ class SVM:
             self.recompute_I_sets()
 
             step_n += 1
+        self.recompute_b()
         return
+
+    def compute_F(self):
+        """Compute target function F(alpha). For debug purposes!!!"""
+        # 1. Check constraints
+        assert s.all(self.alpha >= 0)
+        assert s.all(self.alpha <= self.C)
+        alpha_t = self.alpha * self.T
+        assert h.in_range(alpha_t.sum(), -self.eps, self.eps)
+
+        # 2. Compute F
+        sum1 = alpha_t.dot(self.K).dot(alpha_t)
+        sum2 = self.alpha.sum()
+        F = 0.5 * sum1 - sum2
+        return F
+
+    def recompute_b(self):
+        if len(self.I_0) == 0:
+            self.b = 0
+            return
+        b = 0
+        for i in self.I_0:
+            # y_i_tilda = sum_j (alpha_j * T_j * K(x_j, x_i))
+            y_i_tilda = (self.alpha * self.T).dot(s.array(self.K[i])[0])
+            b += self.T[i] - y_i_tilda
+        self.b = 1.0 * b / len(self.I_0)
 
     def compute_F_LH(self, i, j, L, H):
         K = self.K
@@ -164,20 +200,17 @@ class SVM:
         xxt = X * X.transpose()
         d = s.diag(xxt)
         d = s.matrix(d).transpose()
-        print 'd', d
 
         # 2. compute A
         ones = s.matrix(s.ones(n)).transpose()
         A = (1.0/2) * d * ones.transpose()
         A += (1.0/2) * ones * d.transpose()
         A -= xxt
-        print 'A', A
 
         # 3. compute K with Gaussian kernel
         f = s.vectorize(lambda a : s.exp(-self.tau*a))
         K = f(A)
         assert K.shape == (n,n), "Invalid shape of kernel matrix"
-        print 'K', K
         self.K = K
         return
 
@@ -188,13 +221,30 @@ class SVM:
 
         i_up = I_up[f[I_up].argmin()]
         i_low = I_low[f[I_low].argmax()]
-        assert i_low != i_up, "Indices are equal!"
 
         # Check for optimality
         if f[i_low] <= f[i_up] + 2*self.tau:
             i_low = -1
             i_up = -1
+        assert i_low == -1 or i_low != i_up, "Indices are equal!"
         return (i_low, i_up)
+
+    def classify(self, x_new):
+        X = self.X
+        x_new = s.array(x_new)
+        assert len(x_new) == self.d
+        alpha_t = self.alpha * self.T
+        assert len(alpha_t) == self.n
+
+        K_vect = map(lambda x_i: h.gaussian_kernel_function(x_new, x_i, self.tau),
+                                 s.array(X))
+        K_vect = s.array(K_vect)
+
+        y = alpha_t.dot(K_vect) - self.b
+        cl = int(s.sign(y))
+        assert cl != 0, "We're super lucky!"
+        return cl
+
 
 if __name__ == "__main__":
     X = s.matrix([  [1,2],
@@ -202,6 +252,11 @@ if __name__ == "__main__":
                     [3,4] ])
     T = s.array([1, -1, 1])
     svm = SVM(3,2,X,T)
+    svm.set_params(C=16, tau=0.1)
     svm.run()
+    print 'SVM alphas:',svm.alpha
+    print svm.classify([1,2])
+    print svm.classify([2,5])
+    print svm.classify([3,4])
 
 
