@@ -64,13 +64,24 @@ def get_random_direction(d):
 def computeGradientApproximation(mlp, lx, lt, eps = 1e-4):
     """Computes an approximation (symmetric finite difference) of error gradient
     """
-    d = get_random_direction(mlp.get_dimension())
     
-    # TODO: get huge w vector
+    # get huge w vector
+    w = mlp.serialize_weights()
 
-    # TODO: create MLPs with modified weights
+    # create perturpeb weights
+    dir = get_random_direction(mlp.get_dimension())
+    w_plus = w + eps*dir
+    w_minus = w - eps*dir
 
-    # TODO: get errors E(w + eps*d) and E(w - eps*d)
+    # get errors from pertrbed MLPs: E(w + eps*d) and E(w - eps*d)
+    mlp.deserialize_weights(w_plus)
+    Eplus = mlp.get_input_error(lx, lt)
+
+    mlp.deserialize_weights(w_minus)
+    Eminus = mlp.get_input_error(lx, lt)
+    
+    # recover original state of MLP
+    mlp.deserialize_weights(w)
 
     return (Eplus - Eminus) / 2 / eps
 
