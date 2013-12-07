@@ -69,7 +69,7 @@ def computeGradientApproximation(mlp, lx, lt, eps = 1e-4):
     w = mlp.serialize_weights()
 
     # create perturpeb weights
-    dir = get_random_direction(mlp.get_dimension())
+    dir = get_random_direction(mlp.get_weights_dimension())
     w_plus = w + eps*dir
     w_minus = w - eps*dir
 

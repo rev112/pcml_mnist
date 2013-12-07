@@ -457,6 +457,11 @@ if __name__ == "__main__":
         mlp.train_network([1,1], 1)
         mlp.train_network([-1,-1], -1)
 
+    # just to test the computeGradientApproximation code
+    lx = [[0,0], [1,1]]
+    lt = [1, 0]
+    print "numerical gradient:", func.computeGradientApproximation(mlp, lx, lt)
+
     pickle.dump(mlp, open('trained_network.dat', 'wb'))
 
 
