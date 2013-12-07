@@ -45,15 +45,21 @@ def duplicate_columns(m):
 
 def get_random_direction(d):
     """Computes random direction vector of length d"""
-    success = False
-    while not success:
-        direction = np.random.uniform(-1, 1, d)
-        r_squared = np.sum(direction**2)
-        if 0 < r_squared and r_squared <= 1.0:
-            success = True
+
+    direction = np.random.normal(size=d)
+    
+#    success = False
+#    while not success:
+#        print "trying", d
+#        direction = np.random.uniform(-1, 1, d)
+#        r_squared = np.sum(direction**2)
+#        if 0 < r_squared and r_squared <= 1.0:
+#            success = True
             
     # return normalized
-    return direction / np.sqrt(r_squared)
+    #return direction / np.sqrt(r_squared)
+    return direction / np.linalg.norm(direction)
+
 
 def computeGradientApproximation(mlp, lx, lt, eps = 1e-4):
     """Computes an approximation (symmetric finite difference) of error gradient
