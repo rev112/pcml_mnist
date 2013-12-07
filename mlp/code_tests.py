@@ -1,5 +1,5 @@
 import unittest
-import functions as fun
+import functions as func
 from mlp import *
 import numpy as np
 
@@ -7,16 +7,15 @@ class FunctionsTestCase(unittest.TestCase):
 
     def test_random_direction_norm(self):
         for d in xrange(1, 1001, 10):
-            dir = fun.get_random_direction(d)
+            dir = func.get_random_direction(d)
             self.assertAlmostEqual(np.linalg.norm(dir), 1.)
-
 
 #    def test_random_direction_uniformity(self):
 #        """to test this properly, we need a chi-squared test;
 #        so better way is to plot and test visually
 #        
 #        image with 3D random directions is plotted with 
-#        fun.testplot_random_directions
+#        func.testplot_random_directions
 #        and results are promising
 #        """
 #        pass
@@ -24,7 +23,7 @@ class FunctionsTestCase(unittest.TestCase):
 #        d = 5
 #        sum = np.zeros(d)
 #        for k in xrange(10000):
-#            dir = fun.get_random_direction(d)
+#            dir = func.get_random_direction(d)
 #            sum += dir
 #
 #        self.assertLessEqual(np.linalg.norm(sum), 1e-3)
