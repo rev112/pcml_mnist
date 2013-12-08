@@ -62,7 +62,7 @@ class SVM:
         I_0 = self.filter_alpha(self.is_in_I_0)
         I_plus = self.filter_alpha(self.is_in_I_plus)
         I_minus = self.filter_alpha(self.is_in_I_minus)
-        print I_0, I_plus, I_minus
+        print "I_0, I_plus, I_minus:", I_0, I_plus, I_minus, "\n"
         assert len(I_0) + len(I_plus) + len(I_minus) == self.n, "Invalid I_* sets"
         assert set(I_0 + I_plus + I_minus) == set(range(self.n))
 
@@ -81,9 +81,10 @@ class SVM:
         T = self.T
         K = self.K
         step_n = 0
+        print "\n>>> New run " + ">"*40
         while(1):
             print "Step %u, F: %f" % (step_n, self.compute_F())
-            print "Alphas:", self.alpha, "\n"
+            print "Alphas:", self.alpha
             (i, j) = self.select_pair()
             if j == -1:
                 break
@@ -195,6 +196,7 @@ class SVM:
     def compute_kernel_matrix(self):
         """Compute kernel matrix (see 2.1 from SVM doc)"""
         n = self.n
+        X = self.X
 
         # 1. compute d
         xxt = X * X.transpose()

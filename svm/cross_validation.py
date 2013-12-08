@@ -9,11 +9,12 @@ class CrossValidation:
         self.X = X
         self.T = T
         self.n = len(X)
+        self.d = len(X[0])
         assert self.n == len(T)
         self.M = M
 
     def split_by_index(self, i):
-        """Return a tuple of two dictionaries with 
+        """Return a tuple of two dictionaries with
         keys 'dtp' (datapoints) and 'cl' (classes):
             1. training data (without part i)
             2. validation data (part i)"""
@@ -31,6 +32,16 @@ class CrossValidation:
         validation_set = {'dtp': dtp_validation, 'cl': cl_validation}
         return (training_set, validation_set)
 
+    def do_cross_validation(self):
+        svm_list = []
+        for i in xrange(self.M):
+            tr_set_i, val_set_i = self.split_by_index(i+1)
+            tr_set_size = len(tr_set_i['dtp'])
+            svm_i = svm.SVM(tr_set_size, self.d, tr_set_i['dtp'], tr_set_i['cl'])
+            svm_list.append(svm_i)
+            svm_i.set_params(C=16, tau=0.1)
+            svm_i.run()
+
 if __name__ == "__main__":
 
     X = [[1,2],[3,4],[5,6],[7,8],[9,10],[11,12]]
@@ -39,3 +50,4 @@ if __name__ == "__main__":
     tr_set, val_set = cv.split_by_index(2)
     print "tr_set:", tr_set
     print "val_set:", val_set
+    cv.do_cross_validation()
