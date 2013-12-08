@@ -225,7 +225,7 @@ class SVM:
         i_low = I_low[f[I_low].argmax()]
 
         # Check for optimality
-        if f[i_low] <= f[i_up] + 2*self.tau:
+        if f[i_low] <= f[i_up] + 2*self.eps:
             i_low = -1
             i_up = -1
         assert i_low == -1 or i_low != i_up, "Indices are equal!"
