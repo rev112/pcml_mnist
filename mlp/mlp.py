@@ -80,8 +80,8 @@ class Layer:
 
     def serialize_weights(self):
         """Returns ndarray of all weights for this layer"""
-        # this returns 'flat' vector, row after row
-        w = self.w.reshape(-1)
+        # this returns 'flat' vector, row after row (and then turn it to array)
+        w = s.asarray(self.w).reshape(-1)
         return s.concatenate((w, self.b))
 
     def deserialize_weights(self, w):
@@ -95,7 +95,7 @@ class Layer:
         (wrows, wcols) = self.w.shape
         wtotal = wrows * wcols
 
-        self.w = w[:wtotal].reshape(wrows, wcols)
+        self.w = s.asmatrix(w[:wtotal]).reshape(wrows, wcols)
         self.b = w[wtotal:]
         
 
@@ -122,7 +122,8 @@ class OutputLayer(Layer):
         assert len(w) == d, "Invalid size of weight vector (w)"
         assert len(x) == d, "Invalid size of input vector (x)"
         a = w.dot(x) + b
-        assert type(a) == s.float64
+        assert type(a) == s.float64 \
+                or (type(a) == type(s.array([])) and len(a) == 1)
         return a
 
     def backward_step(self, a, t):
@@ -308,16 +309,19 @@ class Mlp:
         Note: this is not a serialization of the whole class, this
         reconstruction uses dimensions already stored in object
         """
+        assert len(w) == self.get_weights_dimension()
+
         layer_dims = [layer.get_weights_len() for layer in self.layers]
+
         # cumulative sum, to index w
-        post_dims = s.cumsum(layer_dims)
+        post_dims = s.cumsum(layer_dims).tolist()
         # lower bound to index w, for easier iteration
-        pre_dims = s.concatenate((s.array([0]), layer_dims[:-1]))
+        pre_dims = [0] + post_dims[:-1]
 
-        layers_weights = [w[a:b] for a, b in zip(pre_dims, layer_dims)]
-        assert(len(layers_weights) == len(self.layers))
+        layers_weights = [w[a:b] for a, b in zip(pre_dims, post_dims)]
+        assert len(layers_weights) == len(self.layers)
 
-        for layer, w_l in zip(self.layers, layer_weights):
+        for layer, w_l in zip(self.layers, layers_weights):
             layer.deserialize_weights(w_l)
 
 
@@ -452,6 +456,11 @@ if __name__ == "__main__":
         print "\nRun", i
         mlp.train_network([1,1], 1)
         mlp.train_network([-1,-1], -1)
+
+    # just to test the computeGradientApproximation code
+    lx = [[0,0], [1,1]]
+    lt = [1, 0]
+    print "numerical gradient:", func.computeGradientApproximation(mlp, lx, lt)
 
     pickle.dump(mlp, open('trained_network.dat', 'wb'))
 
