@@ -245,13 +245,16 @@ class SVM:
         y = alpha_t.dot(K_vect) - self.b
         return y
 
-    def classify(self, x_new):
-        """Classify a new datapoint"""
-        y = self.get_output(x_new)
+    def classify_output(self, y):
+        """Classify SVM output"""
         cl = int(s.sign(y))
         assert cl != 0, "We're super lucky!"
         return cl
 
+    def classify(self, x_new):
+        """Classify a new datapoint"""
+        y = self.get_output(x_new)
+        return self.classify_output(y)
 
 if __name__ == "__main__":
     X = s.matrix([  [1,2],

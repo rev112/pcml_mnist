@@ -4,6 +4,14 @@ import scipy as s
 import svm
 
 class CrossValidation:
+    """Class for performing a cross-validation
+
+        X - whole dataset (datapoints)
+        T - datapoints' classes
+        n - total number of datpoints
+        d - size of one datapoint
+        M - we're going to perform M-fold cross-validation
+    """
 
     def __init__(self, X, T, M=10):
         self.X = X
@@ -33,18 +41,47 @@ class CrossValidation:
         return (training_set, validation_set)
 
     def do_cross_validation(self):
+        """Perform M-fold cross-validation and return estimator"""
         svm_list = []
-        for i in xrange(self.M):
-            tr_set_i, val_set_i = self.split_by_index(i+1)
+        cv_estimator = 0.0
+        for i in range(1, self.M + 1):
+            tr_set_i, val_set_i = self.split_by_index(i)
             tr_set_size = len(tr_set_i['dtp'])
             svm_i = svm.SVM(tr_set_size, self.d, tr_set_i['dtp'], tr_set_i['cl'])
             svm_list.append(svm_i)
-            svm_i.set_params(C=16, tau=0.1)
+            svm_i.set_params(C=0.01, tau=1)
             svm_i.run()
+            estimator_i = self.compute_estimator(svm_i, val_set_i)
+            cv_estimator += estimator_i
+        cv_estimator = 1.0 * cv_estimator / self.M
+        print "CV estimator:", cv_estimator
+        return cv_estimator
+
+    def compute_estimator(self, svm, validation_set):
+        """Compute least-square estimator for validation set"""
+        val_set_dp = validation_set['dtp']
+        val_set_cl = validation_set['cl']
+        estimator = 0.0
+        validation_size = len(val_set_dp)
+        classified_correctly = 0
+        for i in xrange(validation_size):
+            datapoint = val_set_dp[i]
+            dp_class = val_set_cl[i]
+            assert dp_class in [-1,1]
+            svm_output = svm.get_output(datapoint)
+            output_class = svm.classify_output(svm_output)
+            if output_class == dp_class:
+                classified_correctly += 1
+            estimator += (svm_output - dp_class)**2
+        print "Classified correctly: %0.2f" % \
+              (100.0 * classified_correctly / validation_size)
+        # See p. 183
+        estimator *= 1.0 * self.M / self.n
+        return estimator
 
 if __name__ == "__main__":
 
-    X = [[1,2],[3,4],[5,6],[7,8],[9,10],[11,12]]
+    X = [[1,2],[1,-1],[2,2],[2,-1],[3,3],[3,-1]]
     T = [1,-1,1,-1,1,-1]
     cv = CrossValidation(X, T, M=3)
     tr_set, val_set = cv.split_by_index(2)
