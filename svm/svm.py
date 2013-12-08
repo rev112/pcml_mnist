@@ -170,7 +170,7 @@ class SVM:
         F_H += sig * K[(i,j)] * H_i * H
         F_H += T[i] * H_i * v_i + T[j] * H * v_j - H_i - H
 
-        return [F_L, F_H]
+        return (F_L, F_H)
 
     def compute_min_and_clip(self, i, j, L, H, eta):
         f = self.f
@@ -191,7 +191,7 @@ class SVM:
 
         L = max(0,      sig_w - C * h.indicator(sig == 1))
         H = min(self.C, sig_w + C * h.indicator(sig == -1))
-        return [L, H]
+        return (L, H)
 
     def compute_kernel_matrix(self):
         """Compute kernel matrix (see 2.1 from SVM doc)"""
@@ -205,8 +205,8 @@ class SVM:
 
         # 2. compute A
         ones = s.matrix(s.ones(n)).transpose()
-        A = (1.0/2) * d * ones.transpose()
-        A += (1.0/2) * ones * d.transpose()
+        A = 0.5 * d * ones.transpose()
+        A += 0.5 * ones * d.transpose()
         A -= xxt
 
         # 3. compute K with Gaussian kernel
@@ -231,7 +231,8 @@ class SVM:
         assert i_low == -1 or i_low != i_up, "Indices are equal!"
         return (i_low, i_up)
 
-    def classify(self, x_new):
+    def get_output(self, x_new):
+        """Compute the discriminant function (y) for a given datapoint"""
         X = self.X
         x_new = s.array(x_new)
         assert len(x_new) == self.d
@@ -241,8 +242,12 @@ class SVM:
         K_vect = map(lambda x_i: h.gaussian_kernel_function(x_new, x_i, self.tau),
                                  s.array(X))
         K_vect = s.array(K_vect)
-
         y = alpha_t.dot(K_vect) - self.b
+        return y
+
+    def classify(self, x_new):
+        """Classify a new datapoint"""
+        y = self.get_output(x_new)
         cl = int(s.sign(y))
         assert cl != 0, "We're super lucky!"
         return cl
