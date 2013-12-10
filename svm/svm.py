@@ -64,10 +64,13 @@ class SVM:
         I_minus = self.filter_alpha(self.is_in_I_minus)
         assert len(I_0) + len(I_plus) + len(I_minus) == self.n, "Invalid I_* sets"
         assert set(I_0 + I_plus + I_minus) == set(range(self.n))
+        # print "I_0, I_plus, I_minus:", I_0, I_plus, I_minus
 
         self.I_low = I_minus + I_0
         self.I_up = I_plus + I_0
         self.I_0 = I_0
+        assert len(self.I_low) != 0, "Only +1 classes?"
+        assert len(self.I_up) != 0, "Only -1 classes?"
 
     def initialize_run(self):
         self.f = -self.T * 1.0
@@ -82,9 +85,8 @@ class SVM:
         step_n = 0
         print "\n>>> New run " + ">"*40
         while(1):
-            #print "I_0, I_plus, I_minus:", I_0, I_plus, I_minus, "\n"
-            #print "Step %u, F: %f" % (step_n, self.compute_F())
-            #print "Alphas:", self.alpha
+            print "Step", step_n , ", F: ", self.compute_F()
+            # print "Alphas:", self.alpha
             (i, j) = self.select_pair()
             if j == -1:
                 break
@@ -109,6 +111,10 @@ class SVM:
             alpha_i = self.alpha[i]
             alpha_j = self.alpha[j]
             alpha_i_new = alpha_i + sig * (alpha_j - alpha_j_new)
+
+            alpha_i_new = self.adjust_alpha(alpha_i_new)
+            alpha_j_new = self.adjust_alpha(alpha_j_new)
+            print "new i:", alpha_i_new, "new j:", alpha_j_new
 
             # 5. Update alpha vector
             self.alpha[i] = alpha_i_new
@@ -137,6 +143,8 @@ class SVM:
         sum1 = alpha_t.dot(self.K).dot(alpha_t)
         sum2 = self.alpha.sum()
         F = 0.5 * sum1 - sum2
+        assert F.shape == (1,1)
+        F = F.tolist()[0][0]
         return F
 
     def recompute_b(self):
@@ -193,8 +201,17 @@ class SVM:
         H = min(self.C, sig_w + C * h.indicator(sig == -1))
         return (L, H)
 
+    def adjust_alpha(self, alpha_i):
+        C = self.C
+        if h.in_range(alpha_i, -self.eps, self.eps):
+            return 0
+        if h.in_range(alpha_i, C - self.eps, C + self.eps):
+            return C
+        return alpha_i
+
     def compute_kernel_matrix(self):
         """Compute kernel matrix (see 2.1 from SVM doc)"""
+        print "Computing kernel matrix..."
         n = self.n
         X = self.X
 
@@ -214,6 +231,7 @@ class SVM:
         K = f(A)
         assert K.shape == (n,n), "Invalid shape of kernel matrix"
         self.K = K
+        print "Finished computing kernel matrix."
         return
 
     def select_pair(self):
@@ -225,6 +243,7 @@ class SVM:
         i_low = I_low[f[I_low].argmax()]
 
         # Check for optimality
+        print "f_low, f_up: ", f[i_low], f[i_up]
         if f[i_low] <= f[i_up] + 2*self.eps:
             i_low = -1
             i_up = -1

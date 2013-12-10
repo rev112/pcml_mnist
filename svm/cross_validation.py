@@ -15,8 +15,8 @@ class CrossValidation:
     """
 
     def __init__(self, X, T, M=10):
-        self.X = X
-        self.T = T
+        self.X = s.array(X)
+        self.T = s.array(T)
         self.n = len(X)
         self.d = len(X[0])
         assert self.n == len(T)
@@ -33,8 +33,8 @@ class CrossValidation:
         part_size = self.n / self.M
         lbound = part_size * (i-1)
         hbound = part_size * i
-        dtp_training = X[:lbound] + X[hbound:]
-        cl_training = T[:lbound] + T[hbound:]
+        dtp_training = s.concatenate((X[:lbound],X[hbound:]))
+        cl_training = s.concatenate((T[:lbound], T[hbound:]))
         dtp_validation = X[lbound:hbound]
         cl_validation = T[lbound:hbound]
         training_set = {'dtp': dtp_training, 'cl': cl_training}
