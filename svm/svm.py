@@ -114,7 +114,7 @@ class SVM:
 
             alpha_i_new = self.adjust_alpha(alpha_i_new)
             alpha_j_new = self.adjust_alpha(alpha_j_new)
-            print "new i:", alpha_i_new, "new j:", alpha_j_new
+            print "new i:", alpha_i_new, ", new j:", alpha_j_new
 
             # 5. Update alpha vector
             self.alpha[i] = alpha_i_new
@@ -129,6 +129,7 @@ class SVM:
 
             step_n += 1
         self.recompute_b()
+        print "b:", self.b
         return
 
     def compute_F(self):
@@ -155,7 +156,8 @@ class SVM:
         for i in self.I_0:
             # y_i_tilda = sum_j (alpha_j * T_j * K(x_j, x_i))
             y_i_tilda = (self.alpha * self.T).dot(s.array(self.K[i])[0])
-            b += self.T[i] - y_i_tilda
+            # We change the sign, because in our case y = sum(a t K) - b
+            b += -(self.T[i] - y_i_tilda)
         self.b = 1.0 * b / len(self.I_0)
 
     def compute_F_LH(self, i, j, L, H):
