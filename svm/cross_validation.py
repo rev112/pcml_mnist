@@ -44,7 +44,7 @@ class CrossValidation:
 
     def check_parameters(self):
         init_value = 0.01
-        C_list = [init_value * 2**i for i in range(12)]
+        C_list = [init_value * 2**i for i in range(10)]
         tau_list = list(C_list)
         res = {}
         for (C, tau) in product(C_list, tau_list):
@@ -60,6 +60,7 @@ class CrossValidation:
         svm_list = []
         cv_estimator = 0.0
         for i in range(1, self.M + 1):
+            print ">>> Run number", i
             tr_set_i, val_set_i = self.split_by_index(i)
             tr_set_size = len(tr_set_i['dtp'])
             svm_i = svm.SVM(tr_set_size, self.d, tr_set_i['dtp'], tr_set_i['cl'])
@@ -88,8 +89,9 @@ class CrossValidation:
             if output_class == dp_class:
                 classified_correctly += 1
             estimator += (svm_output - dp_class)**2
-        print "Classified correctly: %0.2f" % \
-              (100.0 * classified_correctly / validation_size)
+        print "Classified correctly: %u/%u (%.2f%%)" % \
+              (classified_correctly, validation_size,
+               100.0 * classified_correctly / validation_size)
         # See p. 183
         estimator *= 1.0 * self.M / self.n
         return estimator

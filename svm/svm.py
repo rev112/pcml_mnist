@@ -37,6 +37,7 @@ class SVM:
         self.tau = tau
 
     ### Move to separate module?
+    ### TODO optimize! Seems that these functions create a bottleneck
     def is_in_I_0(self, i):
         assert i in range(self.n), "Invalid index i"
         return (0 < self.alpha[i]) and (self.alpha[i] < self.C)
@@ -84,6 +85,7 @@ class SVM:
         K = self.K
         step_n = 0
         print "\n>>> New run " + ">"*40
+        print "C =", self.C, ", tau =", self.tau
         while(1):
             print "Step", step_n , ", F: ", self.compute_F()
             # print "Alphas:", self.alpha
