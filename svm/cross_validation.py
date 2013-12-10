@@ -2,6 +2,7 @@
 
 import scipy as s
 import svm
+from itertools import product
 
 class CrossValidation:
     """Class for performing a cross-validation
@@ -40,7 +41,21 @@ class CrossValidation:
         validation_set = {'dtp': dtp_validation, 'cl': cl_validation}
         return (training_set, validation_set)
 
-    def do_cross_validation(self):
+
+    def check_parameters(self):
+        init_value = 0.01
+        C_list = [init_value * 2**i for i in range(12)]
+        tau_list = list(C_list)
+        res = {}
+        for (C, tau) in product(C_list, tau_list):
+            estimator = self.do_cross_validation(C, tau)
+            res[(C,tau)] = round(estimator, 3)
+        print 'All combinations:', res
+        min_key = min(res, key=res.get)
+        print 'Values (C,tau) with minimum estimator value:', min_key
+
+
+    def do_cross_validation(self, C, tau):
         """Perform M-fold cross-validation and return estimator"""
         svm_list = []
         cv_estimator = 0.0
@@ -49,7 +64,7 @@ class CrossValidation:
             tr_set_size = len(tr_set_i['dtp'])
             svm_i = svm.SVM(tr_set_size, self.d, tr_set_i['dtp'], tr_set_i['cl'])
             svm_list.append(svm_i)
-            svm_i.set_params(C=0.01, tau=1)
+            svm_i.set_params(C, tau)
             svm_i.run()
             estimator_i = self.compute_estimator(svm_i, val_set_i)
             cv_estimator += estimator_i
@@ -87,4 +102,4 @@ if __name__ == "__main__":
     tr_set, val_set = cv.split_by_index(2)
     print "tr_set:", tr_set
     print "val_set:", val_set
-    cv.do_cross_validation()
+    cv.check_parameters()
