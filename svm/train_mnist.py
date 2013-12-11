@@ -16,5 +16,32 @@ test_classes = d['Ytest'].flatten()
 
 pt_n = 1000
 print 'Dataset size:', pt_n
-cv = cross_validation.CrossValidation(train_datapoints[:pt_n], train_classes[:pt_n], M=10)
-cv.do_cross_validation(C=2, tau = 0.1)
+#cv = cross_validation.CrossValidation(train_datapoints[:pt_n], train_classes[:pt_n], M=10)
+#cv.do_cross_validation(C=2.56, tau = 0.01)
+
+#cv.check_parameters()
+
+train_datapoints = train_datapoints[:pt_n]
+train_classes = train_classes[:pt_n]
+
+dataset_size = len(train_datapoints)
+dim = len(train_datapoints[0])
+
+svm = svm.SVM(train_datapoints[:pt_n], train_classes[:pt_n])
+svm.set_params(C=2.56, tau=0.01)
+svm.run()
+print svm.alpha
+
+classified_correctly = 0
+trainset_size = len(test_datapoints)
+print "Evaluating on a test dataset..."
+for i in range(trainset_size):
+    dp = test_datapoints[i]
+    true_cl = test_classes[i]
+    output_class = svm.classify(dp)
+    if output_class == true_cl:
+       classified_correctly += 1
+
+print "Correct: %u/%u, %.2f%%" % (classified_correctly, trainset_size,
+                                 100.0 * classified_correctly/trainset_size)
+
