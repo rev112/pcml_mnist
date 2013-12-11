@@ -114,9 +114,10 @@ class SVM:
         print "\n>>> New run " + ">"*40
         print "C =", self.C, ", tau =", self.tau
         while(1):
-            cur_F = self.compute_F()
-            print "Step", step_n , ", F: ", cur_F
-            # print "Alphas:", self.alpha
+            #cur_F = self.compute_F()
+            #print "Step", step_n , ", F: ", cur_F
+            print "Step", step_n
+            #print "Alphas:", self.alpha
             (i, j) = self.select_pair()
             if j == -1:
                 break
@@ -246,6 +247,7 @@ class SVM:
         print "Computing kernel matrix..."
         n = self.n
         X = self.X
+        tau = self.tau
 
         # 1. compute d
         xxt = X * X.transpose()
@@ -258,8 +260,11 @@ class SVM:
         A += 0.5 * ones * d.transpose()
         A -= xxt
 
+        def vect_f(a):
+            return s.exp(-tau*a)
+
         # 3. compute K with Gaussian kernel
-        f = s.vectorize(lambda a : s.exp(-self.tau*a))
+        f = s.vectorize(vect_f)
         K = f(A)
         assert K.shape == (n,n), "Invalid shape of kernel matrix"
         self.K = K

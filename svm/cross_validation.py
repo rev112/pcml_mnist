@@ -80,6 +80,7 @@ class CrossValidation:
         estimator = 0.0
         validation_size = len(val_set_dp)
         classified_correctly = 0
+        print "Computing estimator with validation part..."
         for i in xrange(validation_size):
             datapoint = val_set_dp[i]
             dp_class = val_set_cl[i]
