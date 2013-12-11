@@ -57,7 +57,7 @@ class SVM:
 
     ###
 
-    def recompute_I_sets(self):
+    def compute_I_sets(self):
         # Initialize I_low and I_up
         # TODO how to find indices in a cool way?
         I_0 = self.filter_alpha(self.is_in_I_0)
@@ -73,11 +73,38 @@ class SVM:
         assert len(self.I_low) != 0, "Only +1 classes?"
         assert len(self.I_up) != 0, "Only -1 classes?"
 
+    def update_element_I_set(self, i):
+        I_0 = self.I_0
+        I_low = self.I_low
+        I_up = self.I_up
+        # Remove from sets
+        if i in I_0:
+            I_0.remove(i)
+            I_low.remove(i)
+            I_up.remove(i)
+        elif i in I_low:
+            I_low.remove(i)
+        elif i in I_up:
+            I_up.remove(i)
+
+        # Add to sets
+        if self.is_in_I_0(i):
+            I_0.append(i)
+            I_up.append(i)
+            I_low.append(i)
+        elif self.is_in_I_plus(i):
+            I_up.append(i)
+        elif self.is_in_I_minus(i):
+            I_low.append(i)
+
+    def update_I_sets(self, i, j):
+        self.update_element_I_set(i)
+        self.update_element_I_set(j)
+
     def initialize_run(self):
         self.f = -self.T * 1.0
         self.alpha = s.zeros(self.n)
-        self.recompute_I_sets()
-        return
+        self.compute_I_sets()
 
     def run(self):
         self.initialize_run()
@@ -87,7 +114,8 @@ class SVM:
         print "\n>>> New run " + ">"*40
         print "C =", self.C, ", tau =", self.tau
         while(1):
-            print "Step", step_n , ", F: ", self.compute_F()
+            cur_F = self.compute_F()
+            print "Step", step_n , ", F: ", cur_F
             # print "Alphas:", self.alpha
             (i, j) = self.select_pair()
             if j == -1:
@@ -127,7 +155,7 @@ class SVM:
             self.f += T[j] * (alpha_j_new - alpha_j) * s.array(K[j])[0]
 
             # 7. Update I_low, I_up
-            self.recompute_I_sets()
+            self.update_I_sets(i, j)
 
             step_n += 1
         self.recompute_b()
