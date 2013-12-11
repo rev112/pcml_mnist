@@ -12,13 +12,13 @@ class SVM:
         T - vector (of size n) of datapoint classes (+1 or -1)
     """
 
-    def __init__(self, n, d, X, T):
-        self.n = n
-        self.d = d
+    def __init__(self, X, T):
+        self.n = len(X)
+        self.d = len(s.array(X)[0])
         X = s.matrix(X)
         T = s.array(T)
-        assert X.shape == (n,d), "Invalid shape of data matrix X"
-        assert len(T) == n, "Invalid size of class vector T"
+        assert X.shape == (self.n, self.d), "Invalid shape of data matrix X"
+        assert len(T) == self.n, "Invalid size of class vector T"
         self.X = X
         self.T = T
 
@@ -317,7 +317,7 @@ if __name__ == "__main__":
                     [2,5],
                     [3,4] ])
     T = s.array([1, -1, 1])
-    svm = SVM(3,2,X,T)
+    svm = SVM(X,T)
     svm.set_params(C=16, tau=0.1)
     svm.run()
     print 'SVM alphas:',svm.alpha

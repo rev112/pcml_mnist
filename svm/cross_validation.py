@@ -63,7 +63,7 @@ class CrossValidation:
             print ">>> Run number", i
             tr_set_i, val_set_i = self.split_by_index(i)
             tr_set_size = len(tr_set_i['dtp'])
-            svm_i = svm.SVM(tr_set_size, self.d, tr_set_i['dtp'], tr_set_i['cl'])
+            svm_i = svm.SVM(tr_set_i['dtp'], tr_set_i['cl'])
             svm_list.append(svm_i)
             svm_i.set_params(C, tau)
             svm_i.run()
