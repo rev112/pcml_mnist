@@ -262,12 +262,8 @@ class SVM:
         A += 0.5 * ones * d.transpose()
         A -= xxt
 
-        def vect_f(a):
-            return s.exp(-tau*a)
-
         # 3. compute K with Gaussian kernel
-        f = s.vectorize(vect_f)
-        K = f(A)
+        K = s.exp(-tau*A)
         assert K.shape == (n,n), "Invalid shape of kernel matrix"
         self.K = K
         print "Finished computing kernel matrix."
