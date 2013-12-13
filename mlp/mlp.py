@@ -44,6 +44,10 @@ class Layer:
         """Return r error value for the layer"""
         raise NotImplementedError
 
+    def compute_gradient(self, x, r):
+        """Computes gradient within the layer"""
+        raise NotImplementedError
+
     def update(self, x, r, params={}):
         """Update the parameters for this layer (w,b), given the error
 
