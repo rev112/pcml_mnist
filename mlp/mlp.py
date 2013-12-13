@@ -377,7 +377,7 @@ class Mlp:
         assert output_class != 0, "Impossibru!"
         return output_class
 
-    def train_network(self, x, t):
+    def update_network(self, x, t):
         """Update parameters of the network for one point"""
         assert len(x) == self.d, "Invalid size of input vector (x)"
         pass_info = []
@@ -454,8 +454,8 @@ if __name__ == "__main__":
     mlp.draw()
     for i in xrange(40):
         print "\nRun", i
-        mlp.train_network([1,1], 1)
-        mlp.train_network([-1,-1], -1)
+        mlp.update_network([1,1], 1)
+        mlp.update_network([-1,-1], -1)
 
     # just to test the computeGradientApproximation code
     lx = [[0,0], [1,1]]
