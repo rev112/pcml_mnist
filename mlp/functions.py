@@ -61,7 +61,7 @@ def get_random_direction(d):
     return direction / np.linalg.norm(direction)
 
 
-def computeGradientApproximation(mlp, lx, lt, eps = 1e-4):
+def computeGradientApproximation(mlp, lx, lt, eps = 1e-8):
     """Computes an approximation (symmetric finite difference) of error gradient
     """
     
