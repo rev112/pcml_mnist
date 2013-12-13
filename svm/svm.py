@@ -285,6 +285,34 @@ class SVM:
         assert i_low == -1 or i_low != i_up, "Indices are equal!"
         return (i_low, i_up)
 
+    def get_output_2d(self, xs):
+        """Compute outputs for the array of datapoints"""
+        X = self.X
+        n = self.n
+        m = len(xs)
+        Y = s.matrix(xs)
+
+        yyt = Y * Y.transpose()
+        d_y = s.diag(yyt)
+        d_y = s.matrix(d_y).transpose()
+        ones_y = s.matrix(s.ones(n))
+
+        xt = X.transpose()
+        xxt = X * xt
+        d_x = s.diag(xxt)
+        d_x = s.matrix(d_x)
+        ones_x = s.matrix(s.ones(m)).transpose()
+
+        # A is (m, n) matrix
+        A = 0.5 * (d_y * ones_y + ones_x * d_x)
+        A -= Y * xt
+
+        K_val = s.exp(-self.tau*A)
+        alpha_t = self.alpha * self.T
+        y_out = K_val.dot(alpha_t) - s.matrix([self.b] * m)
+
+        return s.asarray(y_out)[0]
+
     def get_output(self, x_new):
         """Compute the discriminant function (y) for a given datapoint"""
         X = self.X
@@ -325,5 +353,8 @@ if __name__ == "__main__":
     print svm.classify([1,2])
     print svm.classify([2,5])
     print svm.classify([3,4])
+    print '1d', svm.get_output([1,2])
+    print '1d', svm.get_output([2,5])
+    print '2d', svm.get_output_2d([[1,2],[2,5]])
 
 

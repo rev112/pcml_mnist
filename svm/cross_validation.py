@@ -63,15 +63,20 @@ class CrossValidation:
 
         print tau_res
 
-    def check_parameters(self):
+    def check_parameters(self, C_list=[], tau_list=[]):
         C_init_value = 0.1
         tau_init_value = 0.001
         C_list = [C_init_value * 2**i for i in range(10)]
         tau_list = [tau_init_value * 2**i for i in range(10)]
+        print 'C_list', C_list
+        print 'tau_list', tau_list
+
         res = {}
         for (C, tau) in product(C_list, tau_list):
             estimator = self.do_cross_validation(C, tau)
-            res[(C,tau)] = round(estimator, 3)
+            estimator = round(estimator, 3)
+            res[(C,tau)] = estimator
+            print "CHECK_PARAMETERS: C =", C, ", tau:", tau, ", estimator:", estimator
         print 'All combinations:', res
         min_key = min(res, key=res.get)
         print 'Values (C,tau) with minimum estimator value:', min_key
@@ -101,29 +106,33 @@ class CrossValidation:
         val_set_cl = validation_set['cl']
         estimator = 0.0
         validation_size = len(val_set_dp)
-        classified_correctly = 0
         print "Computing estimator with validation part..."
-        for i in xrange(validation_size):
-            datapoint = val_set_dp[i]
-            dp_class = val_set_cl[i]
-            assert dp_class in [-1,1]
-            svm_output = svm.get_output(datapoint)
-            output_class = svm.classify_output(svm_output)
-            if output_class == dp_class:
-                classified_correctly += 1
-            estimator += (svm_output - dp_class)**2
+
+        val_output = svm.get_output_2d(val_set_dp)
+
+        # Compute estimator
+        diff = val_set_cl - val_output
+        estimator = diff.dot(diff).sum()
+        # See p. 183
+        estimator *= 1.0 * self.M / self.n
+
+        classify_vect = s.vectorize(svm.classify_output)
+        output_classes = classify_vect(val_output)
+
+        diff_classes = output_classes - val_set_cl
+        errors = s.count_nonzero(diff_classes)
+        classified_correctly = validation_size - errors
+
         print "Classified correctly: %u/%u (%.2f%%)" % \
               (classified_correctly, validation_size,
                100.0 * classified_correctly / validation_size)
-        # See p. 183
-        estimator *= 1.0 * self.M / self.n
         return estimator
 
 if __name__ == "__main__":
 
     X = [[1,2],[1,-1],[2,2],[2,-1],[3,3],[3,-1]]
     T = [1,-1,1,-1,1,-1]
-    cv = CrossValidation(X, T, M=3)
+    cv = CrossValidation(X, T, M=2)
     tr_set, val_set = cv.split_by_index(2)
     print "tr_set:", tr_set
     print "val_set:", val_set
