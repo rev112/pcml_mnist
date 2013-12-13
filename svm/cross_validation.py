@@ -41,11 +41,33 @@ class CrossValidation:
         validation_set = {'dtp': dtp_validation, 'cl': cl_validation}
         return (training_set, validation_set)
 
+    def find_init_values(self):
+        C_cur = 2**(-4)
+        C_res = {}
+        tau_start = 0.1
+        print "Fixed tau, different C"
+        for i in xrange(10):
+            estimator = self.do_cross_validation(C_cur, tau_start)
+            C_res[C_cur] = estimator
+            C_cur *= 2
+        print C_res
+
+        C_start = 0.1
+        tau_cur = 2**(-4)
+        tau_res = {}
+        print "Fixed C, different tau"
+        for i in xrange(10):
+            estimator = self.do_cross_validation(C_start, tau_cur)
+            tau_res[tau_cur] = estimator
+            tau_cur *= 2
+
+        print tau_res
 
     def check_parameters(self):
-        init_value = 0.01
-        C_list = [init_value * 2**i for i in range(10)]
-        tau_list = list(C_list)
+        C_init_value = 0.1
+        tau_init_value = 0.001
+        C_list = [C_init_value * 2**i for i in range(10)]
+        tau_list = [tau_init_value * 2**i for i in range(10)]
         res = {}
         for (C, tau) in product(C_list, tau_list):
             estimator = self.do_cross_validation(C, tau)

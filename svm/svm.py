@@ -161,6 +161,7 @@ class SVM:
             step_n += 1
         self.recompute_b()
         print "b:", self.b
+        print self.alpha
         return
 
     def compute_F(self):
@@ -190,6 +191,7 @@ class SVM:
             # We change the sign, because in our case y = sum(a t K) - b
             b += -(self.T[i] - y_i_tilda)
         self.b = 1.0 * b / len(self.I_0)
+
 
     def compute_F_LH(self, i, j, L, H):
         K = self.K
@@ -304,7 +306,10 @@ class SVM:
     def classify_output(self, y):
         """Classify SVM output"""
         cl = int(s.sign(y))
-        assert cl != 0, "We're super lucky!"
+        if cl == 0:
+            import random
+            print "Warning, class = 0, assigning label 1..."
+            cl = 1
         return cl
 
     def classify(self, x_new):
