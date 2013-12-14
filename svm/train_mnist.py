@@ -18,8 +18,8 @@ test_classes = d['Ytest'].flatten()
 pt_n = 6000
 print 'Dataset size:', pt_n
 #cv = cross_validation.CrossValidation(train_datapoints[:pt_n], train_classes[:pt_n], M=10)
-#cv.do_cross_validation(C=3.2, tau = 0.008)
-# (3.2, 0.008)!!!
+#cv.do_cross_validation(C=0.08, tau = 0.008)
+# (0.08, 0.008)!!!
 
 #cv.find_init_values()
 #cv.check_parameters()
@@ -32,22 +32,23 @@ dataset_size = len(train_datapoints)
 dim = len(train_datapoints[0])
 
 svm = svm.SVM(train_datapoints[:pt_n], train_classes[:pt_n])
-svm.set_params(C=0.1, tau=0.008)
+svm.set_params(C=0.08, tau=0.008)
 svm.run()
 print svm.alpha.tolist()
 
-trainset_size = len(test_datapoints)
+
+def evaluate(svm, datapoints, classes):
+    size = len(datapoints)
+    output_classes = svm.classify_2d(datapoints)
+    diff_classes = classes - output_classes
+    errors = s.count_nonzero(diff_classes)
+    classified_correctly = size - errors
+    print "Correct: %u/%u, %.2f%%" % (classified_correctly, size,
+                                      100.0 * classified_correctly/size)
+
+
+print "Evaluating on a train dataset..."
+evaluate(svm, train_datapoints, train_classes)
 print "Evaluating on a test dataset..."
-
-test_output = svm.get_output_2d(test_datapoints)
-print 'Test output:', test_output
-classify_vect = s.vectorize(svm.classify_output)
-output_classes = classify_vect(test_output)
-
-diff_classes = test_classes - output_classes
-errors = s.count_nonzero(diff_classes)
-classified_correctly = trainset_size - errors
-
-print "Correct: %u/%u, %.2f%%" % (classified_correctly, trainset_size,
-                                 100.0 * classified_correctly/trainset_size)
+evaluate(svm, test_datapoints, test_classes)
 
