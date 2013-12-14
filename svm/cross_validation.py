@@ -66,8 +66,8 @@ class CrossValidation:
     def check_parameters(self, C_list=[], tau_list=[]):
         C_init_value = 0.1
         tau_init_value = 0.001
-        C_list = [C_init_value * 2**i for i in range(10)]
-        tau_list = [tau_init_value * 2**i for i in range(10)]
+        if not C_list: C_list = [C_init_value * 2**i for i in range(10)]
+        if not tau_list: tau_list = [tau_init_value * 2**i for i in range(10)]
         print 'C_list', C_list
         print 'tau_list', tau_list
 
@@ -76,8 +76,8 @@ class CrossValidation:
             estimator = self.do_cross_validation(C, tau)
             estimator = round(estimator, 3)
             res[(C,tau)] = estimator
-            print "CHECK_PARAMETERS: C =", C, ", tau:", tau, ", estimator:", estimator
-        print 'All combinations:', res
+            print "\nCHECK_PARAMETERS RESULTS: C =", C, ", tau =", tau, ", CV estimator:", estimator
+        print "\n- - -\nAll combinations:", res
         min_key = min(res, key=res.get)
         print 'Values (C,tau) with minimum estimator value:', min_key
 
@@ -86,8 +86,11 @@ class CrossValidation:
         """Perform M-fold cross-validation and return estimator"""
         svm_list = []
         cv_estimator = 0.0
+        print "\n" + "# " * 30
+        print ">>> Started cross validation for C =", C, ",tau =", tau
         for i in range(1, self.M + 1):
-            print ">>> Run number", i
+            print ">>> Run number %u (of %u)" % (i, self.M)
+            print "> Total dataset size:", len(self.X)
             tr_set_i, val_set_i = self.split_by_index(i)
             tr_set_size = len(tr_set_i['dtp'])
             svm_i = svm.SVM(tr_set_i['dtp'], tr_set_i['cl'])
@@ -97,7 +100,6 @@ class CrossValidation:
             estimator_i = self.compute_estimator(svm_i, val_set_i)
             cv_estimator += estimator_i
         cv_estimator = 1.0 * cv_estimator / self.M
-        print "CV estimator:", cv_estimator
         return cv_estimator
 
     def compute_estimator(self, svm, validation_set):

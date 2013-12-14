@@ -111,12 +111,13 @@ class SVM:
         T = self.T
         K = self.K
         step_n = 0
-        print "\n>>> New run " + ">"*40
+        print "\n>>> New run " + ">"*20
         print "C =", self.C, ", tau =", self.tau
         while(1):
+            outstr = ''
             #cur_F = self.compute_F()
             #print "Step", step_n , ", F: ", cur_F
-            print "Step", step_n
+            outstr += "Step " + str(step_n) + "\n"
             #print "Alphas:", self.alpha
             (i, j) = self.select_pair()
             if j == -1:
@@ -145,7 +146,7 @@ class SVM:
 
             alpha_i_new = self.adjust_alpha(alpha_i_new)
             alpha_j_new = self.adjust_alpha(alpha_j_new)
-            print "new i:", alpha_i_new, ", new j:", alpha_j_new
+            #outstr += "new i:" + str(alpha_i_new) + ", new j:" + str(alpha_j_new) + "\n"
 
             # 5. Update alpha vector
             self.alpha[i] = alpha_i_new
@@ -158,10 +159,11 @@ class SVM:
             # 7. Update I_low, I_up
             self.update_I_sets(i, j)
 
+            if step_n % 10 == 0:
+                print outstr
             step_n += 1
         self.recompute_b()
         print "b:", self.b
-        print self.alpha
         return
 
     def compute_F(self):
@@ -278,7 +280,7 @@ class SVM:
         i_low = I_low[f[I_low].argmax()]
 
         # Check for optimality
-        print "f_low, f_up: ", f[i_low], f[i_up]
+        #print "f_low, f_up: ", f[i_low], f[i_up]
         if f[i_low] <= f[i_up] + 2*self.eps:
             i_low = -1
             i_up = -1
