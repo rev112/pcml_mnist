@@ -129,8 +129,10 @@ class OutputLayer(Layer):
     def __init__(self, d):
         Layer.__init__(self, 1, d)
 
-        self.w = s.matrix(s.ones(d))
-        self.b = s.array([1.0])
+        sigma = s.sqrt(1.0/d)
+
+        self.w = s.asmatrix(s.random.normal(0.0, sigma, (1, d)))
+        self.b = s.random.normal(0.0, sigma, 1)
 
     def forward_step(self, x):
         """Return the value for the last layer (a float, not a vector)"""
@@ -186,8 +188,10 @@ class HiddenLayer(Layer):
         Layer.__init__(self, neurons_num, d)
 
         links = 2 * self.h
-        self.w = s.matrix(s.zeros( (links, d) ))
-        self.b = s.ones(links)
+        sigma = s.sqrt(1.0/d)
+
+        self.w = s.asmatrix(s.random.normal(0.0, sigma, (links, d)))
+        self.b = s.random.normal(0.0, sigma, links)
 
     def layer_output(self, x):
         """Return the layer output before applying the transfer function"""
