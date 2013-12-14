@@ -25,6 +25,10 @@ class Layer:
         self.d = d
         self.w = None # define it in subclass
         self.b = None # define it in subclass
+
+        # save gradients for debugging; saved in self.update()
+        self.dE_dw = None
+        self.dE_db = None
         return
 
     def set_default_parameters(self, params={}):
@@ -63,6 +67,10 @@ class Layer:
 
         self.set_default_parameters(params)
         dE_dw, dE_db = self.compute_gradient(x,r)
+
+        # for debugging
+        self.dE_dw = dE_dw
+        self.dE_db = dE_db
 
         dE_dw_shape = dE_dw.shape
         w_shape = self.w.shape
@@ -212,7 +220,7 @@ class HiddenLayer(Layer):
         """
         # See 3.3.1 from the course notes
 
-        # TODO Check it!!!
+        # TODO Check it!!! (or vectorize it to ndarrays)
         # 1. Create vector of g'_x and g'_y
         # (g_der_1, g_der_2)
         pairs = zip(a[::2], a[1::2])
@@ -466,8 +474,8 @@ class Mlp:
             length = layer.get_weights_len()
             end_index = start_index + length
 
-            (dE_dw, dE_db) = layer.compute_gradient() 
-            dE_dw = s.asarrya(dE_dw).reshape(-1)
+            dE_dw = s.asarray(layer.dE_dw).reshape(-1)
+            dE_db = layer.dE_db
 
             whole_dradient[start_index:end_index] = s.concatenate((dE_dw, dE_db))
 
