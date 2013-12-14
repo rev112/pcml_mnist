@@ -61,17 +61,15 @@ def get_random_direction(d):
     return direction / np.linalg.norm(direction)
 
 
-def computeGradientApproximation(mlp, lx, lt, eps = 1e-8):
-    """Computes an approximation (symmetric finite difference) of error gradient
-    """
+def computeDirectionalDerivative(mlp, lx, lt, direction, eps = 1e-8):
+    """Computes a directional derivative of MLP error gradient"""
     
     # get huge w vector
     w = mlp.serialize_weights()
 
     # create perturpeb weights
-    dir = get_random_direction(mlp.get_weights_dimension())
-    w_plus = w + eps*dir
-    w_minus = w - eps*dir
+    w_plus = w + eps*direction
+    w_minus = w - eps*direction
 
     # get errors from pertrbed MLPs: E(w + eps*d) and E(w - eps*d)
     mlp.deserialize_weights(w_plus)

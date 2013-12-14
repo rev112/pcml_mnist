@@ -45,7 +45,13 @@ class Layer:
         raise NotImplementedError
 
     def compute_gradient(self, x, r):
-        """Computes gradient within the layer"""
+        """Computes gradient within the layer
+
+            x - layer input (vector)
+            r - layer error (vector, computed in backward_step)
+            
+            returns (dE_dw, dE_db)
+        """
         raise NotImplementedError
 
     def update(self, x, r, params={}):
@@ -154,7 +160,8 @@ class OutputLayer(Layer):
         dE_dw = s.matrix(r * s.array(x))
 
         # Gradient for bias
-        dE_db = r[0]
+        assert len(r) == 1
+        dE_db = s.array(r)
         dbg.prt('output gradients', dE_db, dE_dw)
         return (dE_dw, dE_db)
 
@@ -263,7 +270,8 @@ class Mlp:
             learning_rate - learning rate for Mlp (dynamic)
     """
 
-    def __init__(self, hidden_layers_list, d):
+    def __init__(self, hidden_layers_list, d, test_gradients_flag = False,
+                    derivative_tolerance = 1e-8):
         self.d = d
         self.set_parameters()
         layers = []
@@ -277,6 +285,9 @@ class Mlp:
         output_layer = OutputLayer(d = hidden_layers_list[-1])
         layers.append(output_layer)
         self.layers = layers
+
+        self.test_gradient_flag = test_gradient_flag
+        self.derivative_tolerance = derivative_tolerance
 
     def set_parameters(self,
                        m_term = defaults.MOMENTUM_TERM_DEFAULT,
@@ -382,7 +393,11 @@ class Mlp:
         return output_class
 
     def update_network(self, x, t):
-        """Update parameters of the network for one point"""
+        """Update parameters of the network for one point; performs one forward
+        and one backward pass
+        @param x one datapoint - a list or ndarray of length d
+        @param t integer denoting datapoint's class (-1 or 1)
+        """
         assert len(x) == self.d, "Invalid size of input vector (x)"
         pass_info = []
         l_input = s.array(x)
@@ -399,7 +414,7 @@ class Mlp:
 
         # Output layer
         output_layer = self.layers[-1]
-        l_output = output_layer.forward_step(l_input)
+        l_output = output_layer.forward_step(l_input) # the output !
         layer_info = {'input': l_input, 'output': l_output}
         pass_info.append(layer_info)
 
@@ -412,7 +427,7 @@ class Mlp:
         out_layer = self.layers[-1]
         out_layer_input = pass_info[-1]['input']
         network_output = pass_info[-1]['output']
-        out_error = out_layer.backward_step(network_output, t)
+        out_error = out_layer.backward_step(network_output, t) # backward step
         next_err = out_error
         next_w = out_layer.w
         out_layer.update(out_layer_input, out_error, self.params)
@@ -432,6 +447,67 @@ class Mlp:
             layer.update(layer_info['input'], layer_error, self.params)
             next_w = layer_weights
             next_err = layer_error
+
+        self.test_gradient(x, t)
+
+    def test_gradient(self, x, t):
+        """A debugging method that performs gradient testing. It will do
+        nothing if self.test_gradient_flag is off
+        """
+        if not self.test_gradient_flag:
+            return
+
+        total_dimension = self.get_weights_dimension()
+        whole_gradient = s.zeros(total_dimension)
+
+        # fill the gradient
+        start_index = 0
+        for layer in self.layers:
+            length = layer.get_weights_len()
+            end_index = start_index + length
+
+            (dE_dw, dE_db) = layer.compute_gradient() 
+            dE_dw = s.asarrya(dE_dw).reshape(-1)
+
+            whole_dradient[start_index:end_index] = s.concatenate((dE_dw, dE_db))
+
+            start_index += length
+
+
+        # test the gradient: first with 30 random 'directions'
+        nb_random_directions = 30
+        too_large_difference = False
+        for k in xrange(nb_random_directions):
+            direction = func.get_random_direction(total_dimension)
+
+            derivative_approx = func.computeDirectionalDerivative(x, t, direction, 
+                    self.derivative_tolerance)
+            derivative_true = whole_gradient.dot(direction)
+
+            if abs(derivative_true - derivative_approx) > 10*self.derivative_tolerance:
+                too_large_difference = True
+                break
+
+        # if some wrong gradient found, test gradient for every weight separately
+        if too_large_difference:
+            print >> sys.stderr, "[WARNING]: Gradient of error function might be wrong", \
+                    "\n\tTesting for all directions"
+            direction = s.zeros(total_dimension)
+            for i in xrange(total_dimension):
+                direction[i] = 1.0
+                if i >= 0:
+                    direction[i-1] = 0.0
+
+                derivative_approx = func.computeDirectionalDerivative(x, t, direction, 
+                        self.derivative_tolerance)
+                derivative_true = whole_gradient.dot(direction)
+
+                difference = abs(derivative_true - derivative_approx)
+
+                if difference > 10*self.derivative_tolerance:
+                    # TODO: maybe output something nicer
+                    print >> sys.stderr, "\tweight index: %d;\tdifference: %f" % (i, difference)
+                
 
 if __name__ == "__main__":
     neur_n = 2
