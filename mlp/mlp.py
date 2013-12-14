@@ -380,14 +380,9 @@ class Mlp:
     def get_input_error(self, lx, lt):
         """Return the value of error function for the whole dataset"""
         assert len(lx) == len(lt), "Data vector and class vector have different dimensions"
-        error = 0
+        error = 0.0
         # Size of dataset
         n = len(lx)
-        # FIXME for loop used, they will punish us
-        # ANSWER: we can't fix this, since compute_layers_output() can't accept
-        # multiple inputs at once. It is not meant to work that way. Anyway, I
-        # think that we don't even need this function.. we're going to use
-        # stochastic gradient descent which always takes only one data per time.
         for i in xrange(n):
             x = lx[i]
             t = lt[i]
@@ -403,6 +398,57 @@ class Mlp:
         # TODO do we need to handle this case? Not sure right now
         assert output_class != 0, "Impossibru!"
         return output_class
+
+    def train_network(self, x_train, t_train, x_valid, t_valid):
+        """Trains the network with given dataset
+        @param lx - 2d array like, rows - data, columns - dimensions
+        @param lt - 1d array like, classes of data
+        @return error data, for plotting purposes; list of tuples like
+                (epoch, train_error, validation_error)
+        """
+
+        x_train = s.array(x_train)
+        (n_train, d_train) = x_train.shape
+
+        x_valid = s.array(x_valid)
+        (n_valid, d_valid) = x_valid.shape
+
+        assert d_train == d_valid
+
+        epoch = 0
+
+        # return value - for plotting
+        error_data = []
+
+        # iteration over epochs
+        while True:
+            epoch += 1
+
+            # iteration over data
+            for index in np.random.permutation(n_train):
+                x = x_train[index][:]
+                t = t_train[index]
+
+                self.update_network(x, t)
+
+                # code for debugging purposes
+                self.test_gradient(x, t)
+
+            # get errors over whole train/valid datasets
+            train_error = self.get_input_error(x_train, t_train)
+            valid_error = self.get_input_error(x_valid, t_valid)
+            error_data.append((epoch, train_error, valid_error))
+
+            # TODO: IMPLEMENT STOPPING CRITERION
+            #   early stopping; when valid starts rising - preventing overfitting
+            #   need to check several epochs to be sure!!!
+            #   enable also without early stopping
+
+            # TODO: check that gradient is dropping
+
+        return error_data
+
+
 
     def update_network(self, x, t):
         """Update parameters of the network for one point; performs one forward
@@ -459,8 +505,6 @@ class Mlp:
             layer.update(layer_info['input'], layer_error, self.params)
             next_w = layer_weights
             next_err = layer_error
-
-        self.test_gradient(x, t)
 
     def test_gradient(self, x, t):
         """A debugging method that performs gradient testing. It will do
