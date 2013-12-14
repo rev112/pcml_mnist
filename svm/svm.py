@@ -2,6 +2,10 @@
 
 import scipy as s
 import helpers as h
+import os
+import sys
+
+sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
 class SVM:
     """SVM class
@@ -30,6 +34,7 @@ class SVM:
         self.compute_kernel_matrix()
 
         self.b = 0
+        self.print_enabled = False
         return
 
     def set_params(self, C=0.01, tau=0.01):
@@ -106,6 +111,12 @@ class SVM:
         self.alpha = s.zeros(self.n)
         self.compute_I_sets()
 
+    def print_out(self, *args):
+        if not self.print_enabled: return
+        for a in args:
+            print a,
+        print
+
     def run(self):
         self.initialize_run()
         T = self.T
@@ -113,11 +124,13 @@ class SVM:
         step_n = 0
         print "\n>>> New run " + ">"*20
         print "C =", self.C, ", tau =", self.tau
+        self.print_enabled = False
         while(1):
+            if step_n % 20 == 0:
+                self.print_enabled = True
             outstr = ''
-            #cur_F = self.compute_F()
-            #print "Step", step_n , ", F: ", cur_F
-            outstr += "Step " + str(step_n) + "\n"
+            cur_F = self.compute_F()
+            self.print_out("Step", step_n , ", F: ", cur_F)
             #print "Alphas:", self.alpha
             (i, j) = self.select_pair()
             if j == -1:
@@ -146,7 +159,7 @@ class SVM:
 
             alpha_i_new = self.adjust_alpha(alpha_i_new)
             alpha_j_new = self.adjust_alpha(alpha_j_new)
-            #outstr += "new i:" + str(alpha_i_new) + ", new j:" + str(alpha_j_new) + "\n"
+            outstr += "new i:" + str(alpha_i_new) + ", new j:" + str(alpha_j_new) + "\n"
 
             # 5. Update alpha vector
             self.alpha[i] = alpha_i_new
@@ -158,9 +171,7 @@ class SVM:
 
             # 7. Update I_low, I_up
             self.update_I_sets(i, j)
-
-            if step_n % 10 == 0:
-                print outstr
+            self.print_enabled = False
             step_n += 1
         self.recompute_b()
         print "b:", self.b
@@ -281,7 +292,7 @@ class SVM:
         i_low = I_low[f[I_low].argmax()]
 
         # Check for optimality
-        #print "f_low, f_up: ", f[i_low], f[i_up]
+        self.print_out("f_low, f_up: ", f[i_low], f[i_up])
         if f[i_low] <= f[i_up] + 2*self.eps:
             i_low = -1
             i_up = -1
@@ -343,6 +354,14 @@ class SVM:
         """Classify a new datapoint"""
         y = self.get_output(x_new)
         return self.classify_output(y)
+
+
+    def classify_2d(self, xs):
+        size = len(xs)
+        output = self.get_output_2d(xs)
+        classify_vect = s.vectorize(self.classify_output)
+        output_classes = classify_vect(output)
+        return output_classes
 
 if __name__ == "__main__":
     X = s.matrix([  [1,2],
