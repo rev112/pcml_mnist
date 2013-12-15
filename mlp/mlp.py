@@ -33,11 +33,11 @@ class Layer:
 
     def set_default_parameters(self, params={}):
         """Read default parameters from 'defaults' module"""
-        s = [
+        to_set = [
                 ('l_rate', defaults.LEARNING_RATE_DEFAULT),
                 ('m_term', defaults.MOMENTUM_TERM_DEFAULT),
             ]
-        for k, v in s:
+        for k, v in to_set:
             params.setdefault(k, v)
 
     def forward_step(self, x):
@@ -282,7 +282,7 @@ class Mlp:
             learning_rate - learning rate for Mlp (dynamic)
     """
 
-    def __init__(self, hidden_layers_list, d, test_gradients_flag = False,
+    def __init__(self, hidden_layers_list, d, test_gradient_flag = False,
                     derivative_tolerance = 1e-8):
         self.d = d
         self.set_parameters()
@@ -425,7 +425,7 @@ class Mlp:
             epoch += 1
 
             # iteration over data
-            for index in np.random.permutation(n_train):
+            for index in s.random.permutation(n_train):
                 x = x_train[index][:]
                 t = t_train[index]
 
@@ -444,7 +444,8 @@ class Mlp:
             #   need to check several epochs to be sure!!!
             #   enable also without early stopping
 
-            # TODO: check that gradient is dropping
+            # TODO: check that gradient is dropping (probably looking at the image
+            #   plot will suffice)
 
         return error_data
 
@@ -525,7 +526,7 @@ class Mlp:
             dE_dw = s.asarray(layer.dE_dw).reshape(-1)
             dE_db = layer.dE_db
 
-            whole_dradient[start_index:end_index] = s.concatenate((dE_dw, dE_db))
+            whole_gradient[start_index:end_index] = s.concatenate((dE_dw, dE_db))
 
             start_index += length
 
