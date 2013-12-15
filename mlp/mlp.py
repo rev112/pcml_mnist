@@ -172,7 +172,7 @@ class OutputLayer(Layer):
         # Gradient for bias
         assert len(r) == 1
         dE_db = s.array(r)
-        dbg.prt('output gradients', dE_db, dE_dw)
+        #dbg.prt('output gradients', dE_db, dE_dw)
         return (dE_dw, dE_db)
 
 class HiddenLayer(Layer):
@@ -448,6 +448,8 @@ class Mlp:
             train_error = self.get_input_error(x_train, t_train)
             valid_error = self.get_input_error(x_valid, t_valid)
             error_data.append((epoch, train_error, valid_error))
+            print "Epoch:", epoch, 'tr:', train_error, 'val:', valid_error
+
 
             if stopping_criterion.checkFinished(error_data):
                 break
@@ -464,6 +466,7 @@ class Mlp:
         @param t integer denoting datapoint's class (-1 or 1)
         """
         assert len(x) == self.d, "Invalid size of input vector (x)"
+        assert t in [1, -1]
         pass_info = []
         l_input = s.array(x)
 
@@ -484,7 +487,7 @@ class Mlp:
         pass_info.append(layer_info)
 
         # pdb.set_trace()
-        dbg.prt("Pass info:", pass_info)
+        #dbg.prt("Pass info:", pass_info)
 
         ### Backward step
 
@@ -506,7 +509,7 @@ class Mlp:
         for i in xrange(hidden_layer_num - 1, -1, -1):
             layer = hidden_layers[i]
             layer_info = pass_info[i]
-            dbg.prt('layer', i, ':', layer, layer_info)
+            #dbg.prt('layer', i, ':', layer, layer_info)
             layer_weights = layer.w
             layer_error = layer.backward_step(next_err, next_w, layer_info['temp'])
             layer.update(layer_info['input'], layer_error, self.params)
@@ -615,6 +618,9 @@ class Mlp:
             """
             # TODO: check this method if it seems correct
 
+            if len(error_data) < self.checking_length:
+                return False
+
             last_valid = error_data[-1][2]
 
             # inspect last few errors
@@ -637,29 +643,11 @@ class Mlp:
             return False
 
 if __name__ == "__main__":
-    neur_n = 2
 
-    l2 = OutputLayer(neur_n)
-    linput = [1] * neur_n
-    f_step2 = l2.forward_step(linput)
-    error = l2.backward_step(f_step2, 1)
-    print l2.w, l2.b, "\n"
-    l2.update(linput, error)
-    print l2.w, l2.b, "\n"
-
-    d = 5
-    l1 = HiddenLayer(neur_n, d)
-    linput = [1] * d
-    f_step1 = l1.layer_output(linput)
-    errors = l1.backward_step(error, l2.w, f_step1)
-    print errors
-    l1.update(linput, errors)
-    print l1.w
-
-    mlp = Mlp(hidden_layers_list = [4,2], d = 2)
+    mlp = Mlp(hidden_layers_list = [1], d = 2)
     print "Number of layers, including output layer:", mlp.get_layers_num()
     mlp.draw()
-    for i in xrange(40):
+    for i in xrange(100):
         print "\nRun", i
         mlp.update_network([1,1], 1)
         mlp.update_network([-1,-1], -1)
@@ -667,7 +655,7 @@ if __name__ == "__main__":
     # just to test the computeGradientApproximation code
     lx = [[0,0], [1,1]]
     lt = [1, 0]
-    print "numerical gradient:", func.computeGradientApproximation(mlp, lx, lt)
+    # print "numerical gradient:", func.computeGradientApproximation(mlp, lx, lt)
 
     pickle.dump(mlp, open('trained_network.dat', 'wb'))
 
