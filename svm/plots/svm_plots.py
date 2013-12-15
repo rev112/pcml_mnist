@@ -1,9 +1,12 @@
 #!/usr/bin/env python2
 
-import matplotlib.pyplot as plt
 import re
 import sys
+from matplotlib import rc
+import matplotlib.pyplot as plt
 
+rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
+rc('text', usetex=True)
 
 log_file = open('../train_6000_log.txt', 'r')
 file_str = log_file.read()
@@ -23,9 +26,9 @@ def plot_svm_criterion():
     assert len(steps) == len(all_F)
     
     plt.plot(steps, all_F, color='r')
-    plt.xlabel('Step number')
-    plt.ylabel('SVM criterion (Phi)')
-    plt.title('SVM criterion (Phi)')
+    plt.xlabel('Step number', fontsize=18)
+    plt.ylabel(r'$\Phi(\alpha)$', fontsize=18)
+    plt.title(r'SVM criterion $(\Phi(\alpha))$', fontsize=20)
     plt.show()
 
 def plot_convergence_criterion():
@@ -38,12 +41,12 @@ def plot_convergence_criterion():
 
     plt.semilogy(steps, f_diff, color='b')
     #plt.plot(steps, f_diff, color='b')
-    plt.xlabel('Step number')
-    plt.ylabel('Convergence criterion (f_low - f_up)')
-    plt.title('Convergence criterion (f_low - f_up)')
+    plt.xlabel('Step number', fontsize=18)
+    plt.ylabel(r'Convergence criterion ($f_{low} - f_{up}$)', fontsize=18)
+    plt.title(r'Convergence criterion ($f_{low} - f_{up}$)', fontsize=20)
     plt.show()
     
 
 
-plot_svm_criterion()
-#plot_convergence_criterion()
+#plot_svm_criterion()
+plot_convergence_criterion()
