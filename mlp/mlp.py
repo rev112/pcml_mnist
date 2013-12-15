@@ -449,10 +449,8 @@ class Mlp:
             valid_error = self.get_input_error(x_valid, t_valid)
             error_data.append((epoch, train_error, valid_error))
 
-            # TODO: IMPLEMENT STOPPING CRITERION
-            #   early stopping; when valid starts rising - preventing overfitting
-            #   need to check several epochs to be sure!!!
-            #   enable also without early stopping
+            if stopping_criterion.checkFinished(error_data):
+                break
 
             # TODO: check that gradient is dropping (probably looking at the image
             #   plot will suffice)
@@ -574,6 +572,69 @@ class Mlp:
                 if difference > 10*self.derivative_tolerance:
                     # TODO: maybe output something nicer
                     print >> sys.stderr, "\tweight index: %d;\tdifference: %f" % (i, difference)
+
+
+    class StoppingCriterion:
+        def checkFinished(self, error_data):
+            """Checks if learning has finished
+            @param error_data train and validation error data within each epoch
+            @returns True if learning needs to stop
+            """
+            raise NotImplementedError
+
+    class BasicStoppingCriterion(StoppingCriterion):
+        def __init__(self, error_tolerance, max_nb_epochs):
+            self.error_tolerance = error_tolerance
+            self.max_nb_epochs = max_nb_epochs
+
+        def checkFinished(self, error_data):
+            nb_epochs = error_data[-1][0]
+            train_error = error_data[-1][1]
+
+            if train_error <= self.error_tolerance \
+                    or nb_epochs >= self.max_nb_epochs:
+                return True
+            return False
+
+    class EarlyStoppingCriterion(StoppingCriterion):
+        def __init__(self, checking_length = 3, tolerance = 1e-4):
+            """constructor
+            @param checking_length number of last epochs to check wether
+                validation error diverges from train error
+            @param tolerance it is a small value which defines the decreasing
+                rate of validation error (maybe this description is not the best)
+            """
+            self.checking_length = checking_length
+            self.tolerance = tolerance
+
+        def checkFinished(self, error_data):
+            """Method will check last self.checking_length epochs if validation
+            error is monotonically increasing (with some tolerance). Only if it
+            is monotonically increasing will the learning be stopped, because
+            that will confirm overfitting
+            """
+            # TODO: check this method if it seems correct
+
+            last_valid = error_data[-1][2]
+
+            # inspect last few errors
+            for errs in error_data[-2:-1-self.checking_length:-1]:
+                valid = errs[2]
+
+                if last_valid < valid - self.tolerance:
+                    # this happens when validation error actually drops
+                    # then go out of for loop and continue with learning
+                    break
+
+                last_valid = valid
+            else:
+                # this will happen only when for loop finished without break
+                # there is an increasing trend of validation error, for all of
+                # the last check_length epochs
+                return True
+
+            # validation error is not constantly increasing
+            return False
                 
 
 if __name__ == "__main__":
