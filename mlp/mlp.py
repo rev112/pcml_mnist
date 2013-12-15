@@ -282,8 +282,15 @@ class Mlp:
             learning_rate - learning rate for Mlp (dynamic)
     """
 
-    def __init__(self, hidden_layers_list, d, test_gradient_flag = False,
-                    derivative_tolerance = 1e-8):
+    def __init__(self, hidden_layers_list, d, test_gradient_flag = False):
+        """constructor
+        @param hidden_layers_list list that describes how many hidden layers
+            is needed, and how many neurons per layer (this DOES NOT include
+            the output layer)
+        @param d the dimension of input to the network
+        @param test_gradient_flag flag which turns on/off the code for testing
+            the gradient (for debugging purposes)
+        """
         self.d = d
         self.set_parameters()
         layers = []
@@ -299,7 +306,6 @@ class Mlp:
         self.layers = layers
 
         self.test_gradient_flag = test_gradient_flag
-        self.derivative_tolerance = derivative_tolerance
 
     def set_parameters(self,
                        m_term = defaults.MOMENTUM_TERM_DEFAULT,
@@ -399,12 +405,16 @@ class Mlp:
         assert output_class != 0, "Impossibru!"
         return output_class
 
-    def train_network(self, x_train, t_train, x_valid, t_valid):
+    def train_network(self, x_train, t_train, x_valid, t_valid, stopping_criterion,
+            derivative_tolerance = 1e-8):
         """Trains the network with given dataset
-        @param lx - 2d array like, rows - data, columns - dimensions
-        @param lt - 1d array like, classes of data
+        @param x_train, x_valid - 2d array like, rows - data, columns - dimensions
+        @param t_train, t_valid - 1d array like, classes of data
+        @param stopping_criterion object of inner class Stopping criterion
+        @param derivative_tolerance tolerance (epsilon) for testing the derivative
+            (needed only when test_gradient_flag is True)
         @return error data, for plotting purposes; list of tuples like
-                (epoch, train_error, validation_error)
+            (epoch, train_error, validation_error)
         """
 
         x_train = s.array(x_train)
@@ -432,7 +442,7 @@ class Mlp:
                 self.update_network(x, t)
 
                 # code for debugging purposes
-                self.test_gradient(x, t)
+                self.test_gradient(x, t, derivative_tolerance)
 
             # get errors over whole train/valid datasets
             train_error = self.get_input_error(x_train, t_train)
@@ -507,7 +517,7 @@ class Mlp:
             next_w = layer_weights
             next_err = layer_error
 
-    def test_gradient(self, x, t):
+    def test_gradient(self, x, t, derivative_tolerance):
         """A debugging method that performs gradient testing. It will do
         nothing if self.test_gradient_flag is off
         """
