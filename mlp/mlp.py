@@ -457,8 +457,6 @@ class Mlp:
 
         return error_data
 
-
-
     def update_network(self, x, t):
         """Update parameters of the network for one point; performs one forward
         and one backward pass
@@ -545,11 +543,12 @@ class Mlp:
         for k in xrange(nb_random_directions):
             direction = func.get_random_direction(total_dimension)
 
-            derivative_approx = func.computeDirectionalDerivative(x, t, direction, 
-                    self.derivative_tolerance)
+            derivative_approx = func.computeDirectionalDerivative(self, [x], t,
+                    direction, derivative_tolerance)
             derivative_true = whole_gradient.dot(direction)
 
-            if abs(derivative_true - derivative_approx) > 10*self.derivative_tolerance:
+            if abs(derivative_true - derivative_approx) \
+                    > 10 * derivative_tolerance:
                 too_large_difference = True
                 break
 
@@ -563,15 +562,16 @@ class Mlp:
                 if i >= 0:
                     direction[i-1] = 0.0
 
-                derivative_approx = func.computeDirectionalDerivative(x, t, direction, 
-                        self.derivative_tolerance)
+                derivative_approx = func.computeDirectionalDerivative(self, [x],
+                        t, direction, derivative_tolerance)
                 derivative_true = whole_gradient.dot(direction)
 
                 difference = abs(derivative_true - derivative_approx)
 
-                if difference > 10*self.derivative_tolerance:
+                if difference > 10 * derivative_tolerance:
                     # TODO: maybe output something nicer
-                    print >> sys.stderr, "\tweight index: %d;\tdifference: %f" % (i, difference)
+                    print >> sys.stderr, "\tweight index: %d;\tdifference: %f" \
+                            % (i, difference)
 
 
     class StoppingCriterion:
@@ -635,7 +635,6 @@ class Mlp:
 
             # validation error is not constantly increasing
             return False
-                
 
 if __name__ == "__main__":
     neur_n = 2
