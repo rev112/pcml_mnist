@@ -11,7 +11,7 @@ all_C = [0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64, 1.28, 2.56, 5.12]
 all_tau1 = [0.001, 0.002, 0.004, 0.008, 0.016]
 all_tau2 = [0.032, 0.064, 0.128, 0.256, 0.512]
 
-all_tau = all_tau1
+all_tau = all_tau2
 
 d = scipy.io.loadmat('../mnist/4svm/mp_4-9_data_prepr_shuf.mat')
 

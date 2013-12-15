@@ -49,9 +49,9 @@ valid_datapoints = valid_datapoints[:dtp]
 valid_classes = valid_classes[:dtp]
 
 # Use the part of them to train the network
-mlp = mlp.Mlp(hidden_layers_list = [2], d = len(train_datapoints[0]))
+mlp = mlp.Mlp(hidden_layers_list = [30, 10], d = len(train_datapoints[0]))
 
-stop_crit = mlp.BasicStoppingCriterion(0.0000001, 10)
+stop_crit = mlp.BasicStoppingCriterion(0.01, 100)
 #stop_crit = mlp.EarlyStoppingCriterion()
 res = mlp.train_network(train_datapoints, train_classes, valid_datapoints, valid_classes, stop_crit)
 print res
@@ -70,4 +70,6 @@ for i in xrange(len(test_datapoints)):
         classified_correctly += 1
 
 print classified_correctly, total_len, 100.0*classified_correctly/total_len
-
+print mlp.get_input_error(train_datapoints, train_classes),
+print mlp.get_input_error(valid_datapoints, valid_classes),
+print mlp.get_input_error(test_datapoints, test_classes)
