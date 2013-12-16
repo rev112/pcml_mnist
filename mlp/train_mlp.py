@@ -31,8 +31,8 @@ def learn(argv):
     d = x_train.shape[1]
 
     mlp = Mlp(hidden_layers_list, d)
-    #stopping_criterion = Mlp.EarlyStoppingCriterion()
-    stopping_criterion = Mlp.BasicStoppingCriterion(0.001, 100)
+    stopping_criterion = Mlp.EarlyStoppingCriterion(5, 1e-5)
+    #stopping_criterion = Mlp.BasicStoppingCriterion(0.001, 100)
 
     (error_data, best_epoch) = mlp.train_network(x_train, t_train, 
             x_valid, t_valid, stopping_criterion)
@@ -59,6 +59,7 @@ def learn(argv):
             mlp.get_accuracy(x_test, t_test), "%"
 
     pickle.dump(mlp, open('trained_network.dat', 'wb'))
+
 
 if __name__ == '__main__':
     if len(sys.argv) not in [2, 3]:
