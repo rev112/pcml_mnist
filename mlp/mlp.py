@@ -397,6 +397,10 @@ class Mlp:
         error = error / n
         return error
     
+    def zero_one_error(self, lx, lt):
+        accuracy = self.get_accuracy(lx, lt)
+        return 1.0 - accuracy/100.0
+
     def get_accuracy(self, lx, lt):
         """Return percentage of correct classifications on the dataset"""
         assert len(lx) == len(lt)
@@ -467,7 +471,8 @@ class Mlp:
             # get errors over whole train/valid datasets
             train_error = self.get_input_error(x_train, t_train)
             valid_error = self.get_input_error(x_valid, t_valid)
-            error_data.append((epoch, train_error, valid_error))
+            valid_zeroone_error = self.zero_one_error(x_valid, t_valid)
+            error_data.append((epoch, train_error, valid_error, valid_zeroone_error))
             print "Epoch:", epoch, 'tr:', train_error, 'val:', valid_error
 
             if stopping_criterion.checkFinished(error_data, self):
