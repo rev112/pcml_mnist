@@ -397,11 +397,30 @@ class Mlp:
         n = len(lx)
         for i in xrange(n):
             x = lx[i]
-            t = lt[i]
+            t = float(lt[i])
             error += self.get_point_error(x,t)
 
         error = error / n
         return error
+    
+    def get_accuracy(self, lx, lt):
+        """returns percentage of correct classifications on the dataset"""
+        assert len(lx) == len(lt)
+
+        n = len(lx)
+        classified_correctly = 0
+        for i in xrange(n):
+            x = lx[i]
+            t = float(lt[i])
+            prediction = self.classify(x)
+            
+            if prediction == t:
+                classified_correctly += 1
+
+        return 100.0 * classified_correctly / n
+
+
+
 
     def classify(self, x):
         """Classify the input as +1 or -1"""

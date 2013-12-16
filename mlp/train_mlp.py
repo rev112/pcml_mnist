@@ -1,13 +1,16 @@
 from plotters import plot_network_errors
+import pickle
 from mlp import Mlp
 import sys
 import numpy as np
 import scipy.io
 
 usage = '''Usage:
-python train_mlp.py <dataset_file>
+python train_mlp.py <dataset_file> [<network architecture>]
 
 where <dataset_file> should be a .mat file with entries 'TrainSet' and similar
+and <network architecture> is optional parameter for network architecture
+(please put quotes, or no whitespace when describing architecture)
 '''
 
 def learn(argv):
@@ -32,15 +35,20 @@ def learn(argv):
     error_data = mlp.train_network(x_train, t_train, x_train, t_train,
             stopping_criterion)
 
-    print "Train log error:"
-    print mlp.get_input_error(x_train, t_train)
-    print "Valid log error:"
-    print mlp.get_input_error(x_valid, t_valid)
+    plot_network_errors(error_data)
 
-    x_test = np.array(matFileContent['Xtest'].tolist())
-    t_test = np.array(matFileContent['Ytest'].tolist())
-    print "Test log error:"
-    print mlp.get_input_error(x_test, t_test)
+    print "Train log error and accuracy:"
+    print mlp.get_input_error(x_train, t_train), \
+            mlp.get_accuracy(x_train, t_train), "%"
+    print "Valid log error and accuracy:"
+    print mlp.get_input_error(x_valid, t_valid), \
+            mlp.get_accuracy(x_valid, t_valid), "%"
+
+    x_test = np.array(matFileContent['TestSet'].tolist())
+    t_test = np.array(matFileContent['TestClass'].tolist())
+    print "Test log error and accuracy:"
+    print mlp.get_input_error(x_test, t_test), \
+            mlp.get_accuracy(x_test, t_test), "%"
 
     pickle.dump(mlp, open('trained_network.dat', 'wb'))
 
