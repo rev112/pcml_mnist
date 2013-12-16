@@ -85,7 +85,6 @@ class Layer:
         self.w += dw
         self.dw_prev = dw
 
-        # TODO Duplicated code...
         db = -l_rate * (1 - m_term) * dE_db + m_term * self.db_prev
         self.b += db
         self.db_prev = db
@@ -228,7 +227,6 @@ class HiddenLayer(Layer):
         """
         # See 3.3.1 from the course notes
 
-        # TODO Check it!!! (or vectorize it to ndarrays)
         # 1. Create vector of g'_x and g'_y
         # (g_der_1, g_der_2)
         pairs = zip(a[::2], a[1::2])
@@ -263,7 +261,6 @@ class HiddenLayer(Layer):
         # Gradient for weight vector
         assert len(r) == 2 * self.h, "Invalid size of error vector"
 
-        # TODO check it!!!
         dE_dw =  (s.matrix(x).transpose() * r).transpose()
 
         dE_dw_shape = dE_dw.shape
@@ -426,8 +423,9 @@ class Mlp:
         """Classify the input as +1 or -1"""
         output = self.compute_layers_output(x)
         output_class = int(s.sign(output))
-        # TODO do we need to handle this case? Not sure right now
-        assert output_class != 0, "Impossibru!"
+        if output_class == 0: 
+            print >> sys.stderr, "DATA CLASSIFIED WITH 0; deciding to put class 1"
+            output_class = 1
         return output_class
 
     def train_network(self, x_train, t_train, x_valid, t_valid, stopping_criterion,
@@ -481,9 +479,6 @@ class Mlp:
 
             if stopping_criterion.checkFinished(error_data):
                 break
-
-            # TODO: check that gradient is dropping (probably looking at the image
-            #   plot will suffice)
 
         return error_data
 
@@ -598,8 +593,7 @@ class Mlp:
                 difference = abs(derivative_true - derivative_approx)
 
                 if difference > 10 * derivative_tolerance:
-                    # TODO: maybe output something nicer
-                    print >> sys.stderr, "\tweight index: %d;\tdifference: %.16f" \
+                    print >> sys.stderr, "gradient error\tweight index: %d;\tdifference: %.16f" \
                             % (i, difference)
 
 
@@ -642,8 +636,6 @@ class Mlp:
             is monotonically increasing will the learning be stopped, because
             that will confirm overfitting
             """
-            # TODO: check this method if it seems correct
-
             if len(error_data) < self.checking_length:
                 return False
 

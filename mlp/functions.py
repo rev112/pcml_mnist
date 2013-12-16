@@ -36,7 +36,6 @@ def get_first_row(matrix):
 def duplicate_columns(m):
     # Example: [[1,2], [3,4]] -> [[1,1,2,2], [3,3,4,4]]
 
-    # TODO really dirty way, rewrite it
     m = np.matrix(m).tolist()
     extend_row = lambda row: np.array(map(lambda x: [x,x], row)).flatten()
     result_matrix = np.matrix(map(extend_row, m))
