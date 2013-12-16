@@ -13,7 +13,7 @@ where <dataset_file> should be a .mat file with entries 'Xtrain' and 'Xtest'
 def learn_with_gradient_testing(fname):
     matFileContent = scipy.io.loadmat(fname) # corresponding MAT file
     x_train = np.array(matFileContent['Xtrain'].tolist())
-    t_train = np.array(matFileContent['Ytrain'].tolist())
+    t_train = np.array(matFileContent['Ytrain'].flatten())
 
     d = x_train.shape[1]
     hidden_layers_list = [10]
@@ -33,13 +33,13 @@ def learn_with_gradient_testing(fname):
 
     try:
         x_test = np.array(matFileContent['Xtest'].tolist())
-        t_test = np.array(matFileContent['Ytest'].tolist())
+        t_test = np.array(matFileContent['Ytest'].flatten())
         print "Test log error:"
         print mlp.get_input_error(x_test, t_test)
     except:
         pass
 
-    
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:

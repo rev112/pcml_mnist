@@ -6,6 +6,7 @@ import functions as func
 import defaults
 import debug as dbg
 import pickle
+import ipdb
 
 class Layer:
     """Common parent for MLP layers
@@ -133,6 +134,8 @@ class OutputLayer(Layer):
 
         self.w = s.asmatrix(s.random.normal(0.0, sigma, (1, d)))
         self.b = s.random.normal(0.0, sigma, 1)
+        #self.w = s.matrix(s.tile(1.0, d))
+        #self.b = s.array([1.5])
 
     def forward_step(self, x):
         """Return the value for the last layer (a float, not a vector)"""
@@ -141,13 +144,12 @@ class OutputLayer(Layer):
         d = self.d
         assert len(w) == d, "Invalid size of weight vector (w)"
         assert len(x) == d, "Invalid size of input vector (x)"
-        a = w.dot(x) + b
-        assert type(a) == s.float64 \
-                or (type(a) == type(s.array([])) and len(a) == 1)
+        a = w.dot(x) + b[0]
+        assert type(a) == s.float64
         return a
 
     def backward_step(self, a, t):
-        """Return r error value for this output layer (float)
+        """Return r error value for this output layer
 
             a - output of the layer (float), equals to a_(k)
             t - actual class (+1 or -1)
@@ -192,6 +194,8 @@ class HiddenLayer(Layer):
 
         self.w = s.asmatrix(s.random.normal(0.0, sigma, (links, d)))
         self.b = s.random.normal(0.0, sigma, links)
+        #self.w = s.matrix(s.tile(0.6, (links, d)))
+        #self.b = s.tile(0.5, links)
 
     def layer_output(self, x):
         """Return the layer output before applying the transfer function"""
@@ -373,6 +377,7 @@ class Mlp:
         output = x
         for l in self.layers:
             output = l.forward_step(output)
+        assert type(output) == s.float64, "Invalid layers output"
         return output
 
     def get_point_error(self, x, t):
@@ -381,6 +386,7 @@ class Mlp:
         a = self.compute_layers_output(x)
         # Compute log(1 + e^(-t*a)) as (-t*a + log(1 + e^(t*a)))
         temp = -t*a
+        assert type(temp) == s.float64
         return temp + s.log1p(s.exp(-temp))
 
     def get_input_error(self, lx, lt):
@@ -416,6 +422,7 @@ class Mlp:
         @return error data, for plotting purposes; list of tuples like
             (epoch, train_error, validation_error)
         """
+        t_train = t_train.flatten()
 
         x_train = s.array(x_train)
         (n_train, d_train) = x_train.shape
@@ -437,12 +444,14 @@ class Mlp:
             # iteration over data
             for index in s.random.permutation(n_train):
                 x = x_train[index][:]
-                t = t_train[index]
+                t = int(t_train[index])
 
+                #ipdb.set_trace()
+                w_before_update = self.serialize_weights()
                 self.update_network(x, t)
 
                 # code for debugging purposes
-                self.test_gradient(x, t, derivative_tolerance)
+                self.test_gradient(x, t, w_before_update, derivative_tolerance)
 
             # get errors over whole train/valid datasets
             train_error = self.get_input_error(x_train, t_train)
@@ -466,7 +475,7 @@ class Mlp:
         @param t integer denoting datapoint's class (-1 or 1)
         """
         assert len(x) == self.d, "Invalid size of input vector (x)"
-        assert t in [1, -1]
+        assert type(t) == int and t in [1,-1], "Invalid class"
         pass_info = []
         l_input = s.array(x)
 
@@ -486,7 +495,6 @@ class Mlp:
         layer_info = {'input': l_input, 'output': l_output}
         pass_info.append(layer_info)
 
-        # pdb.set_trace()
         #dbg.prt("Pass info:", pass_info)
 
         ### Backward step
@@ -497,26 +505,25 @@ class Mlp:
         network_output = pass_info[-1]['output']
         out_error = out_layer.backward_step(network_output, t) # backward step
         next_err = out_error
-        next_w = out_layer.w
+        next_w = out_layer.w.copy()
         out_layer.update(out_layer_input, out_error, self.params)
 
         # Update hidden layers
         hidden_layers = self.layers[:-1]
         pass_info_hidden = pass_info[:-1]
-        assert len(hidden_layers) == len(pass_info_hidden), "Inconsistent number of layers"
         hidden_layer_num = len(hidden_layers)
+        assert hidden_layer_num == len(pass_info_hidden), "Inconsistent number of layers"
 
         for i in xrange(hidden_layer_num - 1, -1, -1):
             layer = hidden_layers[i]
             layer_info = pass_info[i]
-            #dbg.prt('layer', i, ':', layer, layer_info)
-            layer_weights = layer.w
+            layer_weights = layer.w.copy()
             layer_error = layer.backward_step(next_err, next_w, layer_info['temp'])
             layer.update(layer_info['input'], layer_error, self.params)
             next_w = layer_weights
-            next_err = layer_error
+            next_err = layer_error.copy()
 
-    def test_gradient(self, x, t, derivative_tolerance):
+    def test_gradient(self, x, t, w_before_update, derivative_tolerance):
         """A debugging method that performs gradient testing. It will do
         nothing if self.test_gradient_flag is off
         """
@@ -539,15 +546,14 @@ class Mlp:
 
             start_index += length
 
-
         # test the gradient: first with 30 random 'directions'
         nb_random_directions = 30
         too_large_difference = False
         for k in xrange(nb_random_directions):
             direction = func.get_random_direction(total_dimension)
 
-            derivative_approx = func.computeDirectionalDerivative(self, [x], t,
-                    direction, derivative_tolerance)
+            derivative_approx = func.computeDirectionalDerivative(self, [x], [t],
+                    w_before_update, direction, derivative_tolerance)
             derivative_true = whole_gradient.dot(direction)
 
             if abs(derivative_true - derivative_approx) \
@@ -557,6 +563,7 @@ class Mlp:
 
         # if some wrong gradient found, test gradient for every weight separately
         if too_large_difference:
+            # ipdb.set_trace()
             print >> sys.stderr, "[WARNING]: Gradient of error function might be wrong", \
                     "\n\tTesting for all directions"
             direction = s.zeros(total_dimension)
@@ -566,14 +573,14 @@ class Mlp:
                     direction[i-1] = 0.0
 
                 derivative_approx = func.computeDirectionalDerivative(self, [x],
-                        t, direction, derivative_tolerance)
+                        [t], w_before_update, direction, derivative_tolerance)
                 derivative_true = whole_gradient.dot(direction)
 
                 difference = abs(derivative_true - derivative_approx)
 
                 if difference > 10 * derivative_tolerance:
                     # TODO: maybe output something nicer
-                    print >> sys.stderr, "\tweight index: %d;\tdifference: %f" \
+                    print >> sys.stderr, "\tweight index: %d;\tdifference: %.16f" \
                             % (i, difference)
 
 
@@ -644,13 +651,19 @@ class Mlp:
 
 if __name__ == "__main__":
 
-    mlp = Mlp(hidden_layers_list = [1], d = 2)
+    mlp = Mlp(hidden_layers_list = [2,4,3], d = 1, test_gradient_flag = True)
     print "Number of layers, including output layer:", mlp.get_layers_num()
     mlp.draw()
-    for i in xrange(100):
+    for i in xrange(60):
         print "\nRun", i
-        mlp.update_network([1,1], 1)
-        mlp.update_network([-1,-1], -1)
+        #ipdb.set_trace()
+        w_before_update = mlp.serialize_weights()
+        mlp.update_network([1], 1)
+        mlp.test_gradient([1], 1, w_before_update, 1e-06)
+
+        w_before_update = mlp.serialize_weights()
+        mlp.update_network([-1], -1)
+        mlp.test_gradient([-1], -1, w_before_update, 1e-06)
 
     # just to test the computeGradientApproximation code
     lx = [[0,0], [1,1]]
