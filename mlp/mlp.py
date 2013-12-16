@@ -619,10 +619,12 @@ class Mlp:
 
     class BasicStoppingCriterion(StoppingCriterion):
         def __init__(self, error_tolerance, max_nb_epochs):
+            Mlp.StoppingCriterion.__init__(self)
             self.error_tolerance = error_tolerance
             self.max_nb_epochs = max_nb_epochs
 
         def checkFinished(self, error_data, mlp):
+            self.best_epoch = error_data[-1][0]
             nb_epochs = error_data[-1][0]
             train_error = error_data[-1][1]
 
@@ -639,6 +641,7 @@ class Mlp:
             @param tolerance it is a small value which defines the decreasing
                 rate of validation error (maybe this description is not the best)
             """
+            Mlp.StoppingCriterion.__init__(self)
             self.checking_length = checking_length
             self.tolerance = tolerance
 

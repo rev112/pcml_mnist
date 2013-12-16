@@ -30,12 +30,15 @@ def learn(argv):
     d = x_train.shape[1]
 
     mlp = Mlp(hidden_layers_list, d)
-    stopping_criterion = Mlp.EarlyStoppingCriterion()
+    #stopping_criterion = Mlp.EarlyStoppingCriterion()
+    stopping_criterion = Mlp.BasicStoppingCriterion(0.001, 100)
 
     (error_data, best_epoch) = mlp.train_network(x_train, t_train, 
             x_valid, t_valid, stopping_criterion)
 
-    plot_network_errors(error_data, best_epoch)
+    arch_desc = reduce(lambda x, y:str(x)+"_"+str(y), hidden_layers_list)
+    plt_file = 'plots/errors_'+arch_desc+'.png'
+    plot_network_errors(error_data, best_epoch, plt_file)
 
     print "Train log error and accuracy:"
     print mlp.get_input_error(x_train, t_train), \
