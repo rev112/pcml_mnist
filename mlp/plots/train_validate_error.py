@@ -7,19 +7,7 @@ import sys
 import matplotlib.pyplot as plt
 sys.path.append('..')
 import mlp
-
-
-def plot_network_errors(network_errors):
-    """Plot both train and validation errors"""
-    epochs, training_errors, validation_errors = zip(*network_errors)
-
-    plt.plot(epochs, training_errors, 'r', label='Training error')
-    plt.plot(epochs, validation_errors, 'b', label='Validation error')
-    plt.legend(loc=1)
-    plt.xlabel('Epoch number')
-    plt.ylabel('Logistic error')
-    plt.show()
-
+import plotters
 
 def shuffle_2d(a, b):
     """Shuffle 2 arrays simultaneously"""
@@ -27,7 +15,6 @@ def shuffle_2d(a, b):
     s.random.shuffle(a)
     s.random.set_state(rng_st)
     s.random.shuffle(b)
-
 
 # Test 
 d = scipy.io.loadmat('../../mnist/mp_3-5_data_split.mat')
@@ -45,17 +32,18 @@ shuffle_2d(train_datapoints, train_classes)
 shuffle_2d(valid_datapoints, valid_classes)
 train_datapoints = train_datapoints[:dtp]
 train_classes = train_classes[:dtp]
-valid_datapoints = valid_datapoints[:dtp]
-valid_classes = valid_classes[:dtp]
+valid_datapoints = valid_datapoints
+valid_classes = valid_classes
 
 # Use the part of them to train the network
-mlp = mlp.Mlp(hidden_layers_list = [30, 10], d = len(train_datapoints[0]))
+architecture = [10]
+mlp = mlp.Mlp(hidden_layers_list = architecture, d = len(train_datapoints[0]))
 
-stop_crit = mlp.BasicStoppingCriterion(0.01, 100)
-#stop_crit = mlp.EarlyStoppingCriterion()
-res = mlp.train_network(train_datapoints, train_classes, valid_datapoints, valid_classes, stop_crit)
+#stop_crit = mlp.BasicStoppingCriterion(0.01, 100)
+stop_crit = mlp.EarlyStoppingCriterion()
+res, best_epoch = mlp.train_network(train_datapoints, train_classes, valid_datapoints, valid_classes, stop_crit)
 print res
-plot_network_errors(res)
+plotters.plot_network_errors(res, best_epoch, 'error.png')
 
 test_classes = test_classes.flatten()
 print test_classes

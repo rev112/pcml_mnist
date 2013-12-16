@@ -41,8 +41,7 @@ class SVM:
         self.C = C
         self.tau = tau
 
-    ### Move to separate module?
-    ### TODO optimize! Seems that these functions create a bottleneck
+    # The following functions check if alpha[i] belongs to I_0, I_plus, I_minus sets
     def is_in_I_0(self, i):
         assert i in range(self.n), "Invalid index i"
         return (0 < self.alpha[i]) and (self.alpha[i] < self.C)
@@ -60,11 +59,8 @@ class SVM:
     def filter_alpha(self, f):
         return filter(f, range(self.n))
 
-    ###
-
-    def compute_I_sets(self):
-        # Initialize I_low and I_up
-        # TODO how to find indices in a cool way?
+    def init_I_sets(self):
+        """Initialize I_low and I_up sets"""
         I_0 = self.filter_alpha(self.is_in_I_0)
         I_plus = self.filter_alpha(self.is_in_I_plus)
         I_minus = self.filter_alpha(self.is_in_I_minus)
@@ -79,6 +75,7 @@ class SVM:
         assert len(self.I_up) != 0, "Only -1 classes?"
 
     def update_element_I_set(self, i):
+        """Find a place (I_* set) for an updated alpha[i]"""
         I_0 = self.I_0
         I_low = self.I_low
         I_up = self.I_up
@@ -103,21 +100,28 @@ class SVM:
             I_low.append(i)
 
     def update_I_sets(self, i, j):
+        """Update I_* sets after alpha[i] and alpha[j] have changed"""
         self.update_element_I_set(i)
         self.update_element_I_set(j)
 
     def initialize_run(self):
+        """Initialize SVM parameters"""
         self.f = -self.T * 1.0
         self.alpha = s.zeros(self.n)
-        self.compute_I_sets()
+        self.init_I_sets()
 
     def print_out(self, *args):
+        """Debug printing that can be turned off"""
         if not self.print_enabled: return
         for a in args:
             print a,
         print
 
     def run(self):
+        """The main SMO function.
+        Initialize the parameters, and then update alpha[i]/[j] that
+        violate KKT the most, until the KKT conditions are fulfilled.
+        """
         self.initialize_run()
         T = self.T
         K = self.K
@@ -126,6 +130,7 @@ class SVM:
         print "C =", self.C, ", tau =", self.tau
         self.print_enabled = False
         while(1):
+            # Print debug info every 20 steps
             if step_n % 20 == 0:
                 self.print_enabled = True
             outstr = ''
@@ -137,7 +142,7 @@ class SVM:
                 break
             sig = T[i] * T[j]
 
-            # 1. Computer L, H
+            # 1. Compute L, H
             L, H = self.compute_L_H(i, j)
 
             eta = K[(i,i)] + K[(j,j)] - 2*K[(i,j)]
@@ -178,7 +183,7 @@ class SVM:
         return
 
     def compute_F(self):
-        """Compute target function F(alpha). For debug purposes!!!"""
+        """Compute target function F(alpha)"""
         # 1. Check constraints
         assert s.all(self.alpha >= 0)
         assert s.all(self.alpha <= self.C)
@@ -194,12 +199,13 @@ class SVM:
         return F
 
     def recompute_b(self):
+        """Compute 'b' parameter. Usually takes place once after SVM converged"""
         if len(self.I_0) == 0:
             self.b = 0
             return
         b = 0
         for i in self.I_0:
-            # y_i_tilda = sum_j (alpha_j * T_j * K(x_j, x_i))
+            # We have y_i_tilda = sum_j (alpha_j * T_j * K(x_j, x_i))
             y_i_tilda = (self.alpha * self.T).dot(s.array(self.K[i])[0])
             # We change the sign, because in our case y = sum(a t K) - b
             b += -(self.T[i] - y_i_tilda)
@@ -207,11 +213,12 @@ class SVM:
 
 
     def compute_F_LH(self, i, j, L, H):
+        """Compute Phi_L and Phi_H, if eta is zero or very close to zero"""
         K = self.K
         T = self.T
         f = self.f
         alpha = self.alpha
-        sig = T[i] * T[j]
+        sig = T[i] * [j]
         w = alpha[i] + sig * alpha[j]
         v_i = f[i] + T[i] - alpha[i]*T[i]*K[(i,i)] - alpha[j]*T[j]*K[(i,j)]
         v_j = f[j] + T[j] - alpha[i]*T[i]*K[(i,j)] - alpha[j]*T[j]*K[(j,j)]
@@ -229,6 +236,8 @@ class SVM:
         return (F_L, F_H)
 
     def compute_min_and_clip(self, i, j, L, H, eta):
+        """First alpha_j_unc is computed, and then it is clipped to [L,H] segment.
+        """
         f = self.f
         alpha_j_unc = self.alpha[j] + 1.0 * self.T[j] * (f[i] - f[j]) / eta
         alpha_j = alpha_j_unc
@@ -250,6 +259,9 @@ class SVM:
         return (L, H)
 
     def adjust_alpha(self, alpha_i):
+        """If alpha_i is very close to 0 or C, then just assign 0 or C to it.
+        (computational errors, thank you)
+        """
         C = self.C
         if h.in_range(alpha_i, -self.eps, self.eps):
             return 0
@@ -258,7 +270,7 @@ class SVM:
         return alpha_i
 
     def compute_kernel_matrix(self):
-        """Compute kernel matrix (see 2.1 from SVM doc)"""
+        """Compute the whole kernel matrix (see 2.1 from the SVM doc)"""
         print "Computing kernel matrix..."
         n = self.n
         X = self.X
@@ -300,7 +312,19 @@ class SVM:
         return (i_low, i_up)
 
     def get_output_2d(self, xs):
-        """Compute outputs for the array of datapoints"""
+        """Compute outputs for the array of datapoints
+        We do it in the similar way as we did for a kernel matrix:
+        First we compute A, as a part of the extended kernel matrix:
+        _________
+        |    |   |
+        |    |   | n
+        |____|___|
+        | A  |   |
+        |____|___| m
+           n   m
+        Then, we compute K_val = e^(-tau*A), and output values are:
+        K_val * alpha * t - b
+        """
         X = self.X
         n = self.n
         m = len(xs)
@@ -357,6 +381,7 @@ class SVM:
 
 
     def classify_2d(self, xs):
+        """Classify array of data points, return an array of 1 and -1"""
         size = len(xs)
         output = self.get_output_2d(xs)
         classify_vect = s.vectorize(self.classify_output)
