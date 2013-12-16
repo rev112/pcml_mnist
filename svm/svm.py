@@ -119,7 +119,7 @@ class SVM:
 
     def run(self):
         """The main SMO function.
-        Initialize the parameters, and then update alpha[i]/[j] that 
+        Initialize the parameters, and then update alpha[i]/[j] that
         violate KKT the most, until the KKT conditions are fulfilled.
         """
         self.initialize_run()
@@ -312,7 +312,19 @@ class SVM:
         return (i_low, i_up)
 
     def get_output_2d(self, xs):
-        """Compute outputs for the array of datapoints"""
+        """Compute outputs for the array of datapoints
+        We do it in the similar way as we did for a kernel matrix:
+        First we compute A, as a part of the extended kernel matrix:
+        _________
+        |    |   |
+        |    |   | n
+        |____|___|
+        | A  |   |
+        |____|___| m
+           n   m
+        Then, we compute K_val = e^(-tau*A), and output values are:
+        K_val * alpha * t - b
+        """
         X = self.X
         n = self.n
         m = len(xs)
