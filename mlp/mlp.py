@@ -133,8 +133,6 @@ class OutputLayer(Layer):
 
         self.w = s.asmatrix(s.random.normal(0.0, sigma, (1, d)))
         self.b = s.random.normal(0.0, sigma, 1)
-        #self.w = s.matrix(s.tile(1.0, d))
-        #self.b = s.array([1.5])
 
     def forward_step(self, x):
         """Return the value for the last layer (a float, not a vector)"""
@@ -193,8 +191,6 @@ class HiddenLayer(Layer):
 
         self.w = s.asmatrix(s.random.normal(0.0, sigma, (links, d)))
         self.b = s.random.normal(0.0, sigma, links)
-        #self.w = s.matrix(s.tile(0.6, (links, d)))
-        #self.b = s.tile(0.5, links)
 
     def layer_output(self, x):
         """Return the layer output before applying the transfer function"""
@@ -378,6 +374,7 @@ class Mlp:
         return output
 
     def get_point_error(self, x, t):
+        """Return network error for ONE datapoint"""
         # Update error, see 4.2 in miniproject description
         assert len(x) == self.d, "Invalid size of data point (x)"
         a = self.compute_layers_output(x)
@@ -401,7 +398,7 @@ class Mlp:
         return error
     
     def get_accuracy(self, lx, lt):
-        """returns percentage of correct classifications on the dataset"""
+        """Return percentage of correct classifications on the dataset"""
         assert len(lx) == len(lt)
 
         n = len(lx)
@@ -416,11 +413,8 @@ class Mlp:
 
         return 100.0 * classified_correctly / n
 
-
-
-
     def classify(self, x):
-        """Classify the input as +1 or -1"""
+        """Classify the input (one point) as +1 or -1"""
         output = self.compute_layers_output(x)
         output_class = int(s.sign(output))
         if output_class == 0: 
@@ -475,7 +469,6 @@ class Mlp:
             valid_error = self.get_input_error(x_valid, t_valid)
             error_data.append((epoch, train_error, valid_error))
             print "Epoch:", epoch, 'tr:', train_error, 'val:', valid_error
-
 
             if stopping_criterion.checkFinished(error_data, self):
                 break
@@ -537,7 +530,7 @@ class Mlp:
             layer_error = layer.backward_step(next_err, next_w, layer_info['temp'])
             layer.update(layer_info['input'], layer_error, self.params)
             next_w = layer_weights
-            next_err = layer_error.copy()
+            next_err = layer_error
 
     def test_gradient(self, x, t, w_before_update, derivative_tolerance):
         """A debugging method that performs gradient testing. It will do
@@ -600,6 +593,9 @@ class Mlp:
 
 
     class StoppingCriterion:
+        """Common parent for all StoppingCriterion classes.
+        Just implement checkFinished method, and you're in.
+        """
         def __init__(self):
             self.best_weights = None
             self.best_epoch = 0
@@ -618,6 +614,10 @@ class Mlp:
             raise NotImplementedError
 
     class BasicStoppingCriterion(StoppingCriterion):
+        """This criterion is used to stop learning when the train_error
+        becomes tiny or when the maximum epoch number is reached
+        """
+
         def __init__(self, error_tolerance, max_nb_epochs):
             self.error_tolerance = error_tolerance
             self.max_nb_epochs = max_nb_epochs
@@ -632,6 +632,10 @@ class Mlp:
             return False
 
     class EarlyStoppingCriterion(StoppingCriterion):
+        """Class implements the early stopping criterion: we watch the
+        behaviour of an error on a validation set and stop learning
+        when it starts increasing
+        """
         def __init__(self, checking_length = 3, tolerance = 1e-4):
             """constructor
             @param checking_length number of last epochs to check wether
@@ -694,11 +698,6 @@ if __name__ == "__main__":
         w_before_update = mlp.serialize_weights()
         mlp.update_network([-1], -1)
         mlp.test_gradient([-1], -1, w_before_update, 1e-06)
-
-    # just to test the computeGradientApproximation code
-    lx = [[0,0], [1,1]]
-    lt = [1, 0]
-    # print "numerical gradient:", func.computeGradientApproximation(mlp, lx, lt)
 
     pickle.dump(mlp, open('trained_network.dat', 'wb'))
 
