@@ -1,4 +1,5 @@
 from plotters import plot_network_errors
+import defaults
 import pickle
 from mlp import Mlp
 import sys
@@ -36,8 +37,12 @@ def learn(argv):
     (error_data, best_epoch) = mlp.train_network(x_train, t_train, 
             x_valid, t_valid, stopping_criterion)
 
-    arch_desc = reduce(lambda x, y:str(x)+"_"+str(y), hidden_layers_list)
-    plt_file = 'plots/errors_'+arch_desc+'.png'
+    lrate = defaults.LEARNING_RATE_DEFAULT
+    mterm = defaults.MOMENTUM_TERM_DEFAULT 
+    terms = str(lrate)[2:]+"_"+str(mterm)[2:]
+    arch_desc = reduce(lambda x, y:str(x)+"_"+str(y), 
+            hidden_layers_list, "")
+    plt_file = 'plots/errors_' + terms + arch_desc + '.png'
     plot_network_errors(error_data, best_epoch, plt_file)
 
     print "Train log error and accuracy:"

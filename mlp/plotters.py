@@ -15,6 +15,5 @@ def plot_network_errors(network_errors, best_epoch,
     plt.xlabel('Epoch number')
     plt.ylabel('Logistic error')
     plt.savefig(figure_name, bbox_inches = 0)
-    plt.show()
 
 
