@@ -5,6 +5,9 @@ def plot_network_errors(network_errors, best_epoch,
     """Plot both train and validation errors"""
     epochs, training_errors, validation_errors = zip(*network_errors)
 
+    print "MINIMUM VALIDATION ERROR:\t", \
+            min(validation_errors)
+
     plt.plot(epochs, training_errors, 'b', label='Training error')
     plt.plot(epochs, validation_errors, 'g', label='Validation error')
 
