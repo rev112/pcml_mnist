@@ -477,10 +477,12 @@ class Mlp:
             print "Epoch:", epoch, 'tr:', train_error, 'val:', valid_error
 
 
-            if stopping_criterion.checkFinished(error_data):
+            if stopping_criterion.checkFinished(error_data, self):
                 break
 
-        return error_data
+        chosen_epoch = stopping_criterion.recover_best_mlp(self)
+
+        return error_data, chosen_epoch
 
     def update_network(self, x, t):
         """Update parameters of the network for one point; performs one forward
@@ -598,7 +600,17 @@ class Mlp:
 
 
     class StoppingCriterion:
-        def checkFinished(self, error_data):
+        def __init__(self):
+            self.best_weights = None
+            self.best_epoch = 0
+
+        def recover_best_mlp(self, mlp):
+            if self.best_weights is not None:
+                mlp.deserialize_weights(self.best_weights)
+
+            return self.best_epoch
+
+        def checkFinished(self, error_data, mlp):
             """Checks if learning has finished
             @param error_data train and validation error data within each epoch
             @returns True if learning needs to stop
@@ -610,7 +622,7 @@ class Mlp:
             self.error_tolerance = error_tolerance
             self.max_nb_epochs = max_nb_epochs
 
-        def checkFinished(self, error_data):
+        def checkFinished(self, error_data, mlp):
             nb_epochs = error_data[-1][0]
             train_error = error_data[-1][1]
 
@@ -630,7 +642,9 @@ class Mlp:
             self.checking_length = checking_length
             self.tolerance = tolerance
 
-        def checkFinished(self, error_data):
+            self.best_valid_error = s.inf
+
+        def checkFinished(self, error_data, mlp):
             """Method will check last self.checking_length epochs if validation
             error is monotonically increasing (with some tolerance). Only if it
             is monotonically increasing will the learning be stopped, because
@@ -640,6 +654,11 @@ class Mlp:
                 return False
 
             last_valid = error_data[-1][2]
+
+            if last_valid < self.best_valid_error:
+                self.best_valid_error = last_valid
+                self.best_epoch = error_data[-1][0]
+                self.best_weights = mlp.serialize_weights()
 
             # inspect last few errors
             for errs in error_data[-2:-1-self.checking_length:-1]:
