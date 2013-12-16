@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ARCHITECTURES='[10,5] [10, 10]'
+ARCHITECTURES='[15]'
 
 for arch in $ARCHITECTURES; do
     echo "ARCHITECTURE ${arch}"

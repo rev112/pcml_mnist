@@ -20,4 +20,9 @@ def plot_network_errors(network_errors, best_epoch,
     plt.ylabel('Logistic error')
     plt.savefig(figure_name, bbox_inches = 0)
 
+def plot_test_data(mean, variance):
 
+    plt.bar(['3-5'], mean, yerr = variance)
+    plt.ylabel('Logistic error')
+    plt.xlabel('data set')
+    plt.savefig('plots/35err.png', bbox_inches = 0)

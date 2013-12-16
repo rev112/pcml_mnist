@@ -60,6 +60,7 @@ def learn(argv):
 
     pickle.dump(mlp, open('trained_network.dat', 'wb'))
 
+
 if __name__ == '__main__':
     if len(sys.argv) not in [2, 3]:
         print >> sys.stderr, usage
