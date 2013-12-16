@@ -32,7 +32,7 @@ def learn(argv):
     mlp = Mlp(hidden_layers_list, d)
     stopping_criterion = Mlp.EarlyStoppingCriterion()
 
-    error_data = mlp.train_network(x_train, t_train, x_train, t_train,
+    error_data = mlp.train_network(x_train, t_train, x_valid, t_valid,
             stopping_criterion)
 
     plot_network_errors(error_data)
