@@ -4,12 +4,13 @@ import re
 import sys
 from matplotlib import rc
 import matplotlib.pyplot as plt
+import numpy as np
 
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text', usetex=True)
 
-log_file = open('../train_6000_log.txt', 'r')
-file_str = log_file.read()
+#log_file = open('../train_6000_log.txt', 'r')
+#file_str = log_file.read()
 
 
 def find_steps():
@@ -47,6 +48,31 @@ def plot_convergence_criterion():
     plt.show()
     
 
+def bar_plot_svm_mlp():
+    N = 2
+
+    ind = np.arange(N)  # the x locations for the groups
+    width = 0.3     # the width of the bars
+
+    # Training set, test set
+
+    mlp = (0.024, 0.013)
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, mlp, width, color='r')
+
+    svm = (0.047, 0.042)
+    rects2 = ax.bar(ind+width, svm, width, color='y')
+
+    ax.set_ylabel('Zero/one error')
+    ax.set_title('SVM and MLP comparison')
+    ax.set_xticks(ind+width)
+    ax.set_xticklabels( ('Training set', 'Test set') )
+    ax.legend( (rects1[0], rects2[0]), ('MLP', 'SVM') )
+
+    plt.show()
+
 
 #plot_svm_criterion()
-plot_convergence_criterion()
+#plot_convergence_criterion()
+
+bar_plot_svm_mlp()
